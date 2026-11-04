@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Panggil Alarm - Supervisor</title>
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #f1c40f;
+            --bg: #f4f7f6;
+            --text: #333;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --card-bg: #fff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); overflow-x: hidden; }
+
+        header { background-color: var(--card-bg); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        header h1 { font-size: 1.3rem; color: var(--primary); }
+        .header-btns { display: flex; gap: 10px; align-items: center; }
+        #statusBadge { background: var(--success); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+
+        .dashboard { padding: 25px; max-width: 1200px; margin: 0 auto; display: block; }
+
+        .section-title { font-size: 1rem; color: #7f8c8d; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; margin-top: 20px; }
+
+        /* No Calls State */
+        #emptyState { text-align: center; padding: 60px 20px; background: var(--card-bg); border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-top: 20px; }
+        #emptyState h3 { color: var(--success); margin-bottom: 10px; font-size: 1.5rem; }
+        #emptyState p { color: #7f8c8d; }
+
+        /* Active Calls Grid */
+        #activeCallsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+
+        /* Call Card */
+        .call-card { background: var(--card-bg); border-radius: 15px; padding: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-left: 5px solid var(--danger); animation: slideIn 0.3s ease-out; position: relative; overflow: hidden; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .call-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; }
+        .pos-info h2 { font-size: 1.8rem; color: var(--primary); }
+        .pos-info p { font-size: 0.8rem; color: #7f8c8d; text-transform: uppercase; }
+        
+        .time-ago { font-size: 0.85rem; color: var(--danger); font-weight: bold; background: #fff1f0; padding: 5px 10px; border-radius: 10px; }
+
+        .btn-action { width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: background 0.2s; }
+        .btn-complete { background-color: var(--success); color: white; }
+        .btn-complete:hover { background-color: #27ae60; }
+
+        /* Alarm Overlay & Flash Screen */
+        #flashOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(231, 76, 60, 0.5); display: none; z-index: 1000; pointer-events: none; animation: screenFlash 0.5s infinite; }
+        @keyframes screenFlash { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+        body.alarm-active #flashOverlay { display: block; }
+        body.alarm-active header, body.alarm-active .dashboard { animation: shake 0.5s infinite; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
+
+        /* Floating Alarm Control */
+        #alarmControl { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 15px 25px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 1100; display: none; align-items: center; gap: 15px; width: 90%; max-width: 400px; justify-content: space-between; }
+        body.alarm-active #alarmControl { display: flex; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { bottom: -100px; } to { bottom: 20px; } }
+        #alarmControl p { font-weight: bold; color: var(--danger); font-size: 0.9rem; }
+        .btn-mute { background-color: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div id="flashOverlay"></div>
+
+<div id="alarmControl">
+    <p>⚠️ ALARM AKTIF!</p>
+    <button class="btn-mute" onclick="muteAlarm()">Matikan Suara</button>
+</div>
+
+<header>
+    <h1>Dashboard Supervisor</h1>
+    <div class="header-btns">
+        <div id="statusBadge">Koneksi Aktif</div>
+    </div>
+</header>
+
+<div class="dashboard" id="dashboardContent">
+    <div class="section-title">Panggilan Aktif</div>
+    
+    <div id="emptyState">
+        <h3>✅ Semua Aman</h3>
+        <p>Tidak ada panggilan aktif saat ini.</p>
+    </div>
+
+    <div id="activeCallsGrid"></div>
+</div>
+
+<audio id="alarmAudio" loop preload="auto">
+    <source src="https://pdftourl.net/audio/1793764075186-7516f536-daf6-4ede-bd87-0d70905bc49e.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyB8qkD7b6zRqVXP0q8TTsstCUGfNkknEuY",
+      authDomain: "panggil-alam-kasir.firebaseapp.com",
+      databaseURL: "https://panggil-alam-kasir-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "panggil-alam-kasir",
+      storageBucket: "panggil-alam-kasir.firebasestorage.app",
+      messagingSenderId: "189819600293",
+      appId: "1:189819600293:web:db93782d4094ae54a77c4c",
+      measurementId: "G-Z0VBG64G95"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const alarmAudio = document.getElementById('alarmAudio');
+    let isMuted = false;
+    let activeCallsCount = 0;
+    let timeUpdateInterval = null;
+
+    const emptyState = document.getElementById('emptyState');
+    const callsGrid = document.getElementById('activeCallsGrid');
+    const body = document.body;
+
+    window.onload = function() {
+        initializeRealtimeListener();
+        alarmAudio.play().then(() => {
+            alarmAudio.pause();
+            alarmAudio.currentTime = 0;
+        }).catch(e => console.log("Audio waiting for interaction"));
+    };
+
+    let activeCallsData = {};
+
+    function initializeRealtimeListener() {
+        database.ref('panggilan').on('value', (snapshot) => {
+            activeCallsData = {};
+            activeCallsCount = 0;
+
+            snapshot.forEach((childSnapshot) => {
+                const key = childSnapshot.key;
+                const data = childSnapshot.val();
+
+                if (data.status === 'active') {
+                    activeCallsData[key] = data;
+                    activeCallsCount++;
+                }
+            });
+
+            renderCalls();
+            handleAlarmLifecycle();
+        });
+    }
+
+    function completeCall(callId) {
+        database.ref(`panggilan/${callId}`).update({
+            status: 'completed',
+            completedAt: firebase.database.ServerValue.TIMESTAMP
+        });
+        
+        if (isMuted) isMuted = false; 
+    }
+
+    function renderCalls() {
+        callsGrid.innerHTML = '';
+
+        if (activeCallsCount === 0) {
+            emptyState.style.display = 'block';
+            clearInterval(timeUpdateInterval);
+            return;
+        }
+
+        emptyState.style.display = 'none';
+
+        const sortedKeys = Object.keys(activeCallsData).sort((a, b) => {
+            return activeCallsData[b].timestamp - activeCallsData[a].timestamp;
+        });
+
+        sortedKeys.forEach(key => {
+            const call = activeCallsData[key];
+            const card = createCallCard(key, call);
+            callsGrid.appendChild(card);
+        });
+
+        if (!timeUpdateInterval) {
+            timeUpdateInterval = setInterval(updateAllTimeAgos, 1000);
+        }
+        updateAllTimeAgos();
+    }
+
+    function createCallCard(id, data) {
+        const card = document.createElement('div');
+        card.className = 'call-card';
+        card.id = `card-${id}`;
+
+        const kassaType = data.posId.includes('kassa') ? 'Kassa Utama' : 'Counter Area';
+
+        card.innerHTML = `
+            <div class="call-header">
+                <div class="pos-info">
+                    <h2>${data.posName}</h2>
+                    <p>${kassaType}</p>
+                </div>
+                <div class="time-ago" id="timeago-${id}" data-time="${data.timestamp}">Menghitung...</div>
+            </div>
+            <button class="btn-action btn-complete" onclick="completeCall('${id}')">Selesai & Matikan Alarm</button>
+        `;
+
+        return card;
+    }
+
+    function updateAllTimeAgos() {
+        document.querySelectorAll('.time-ago').forEach(elem => {
+            const timestamp = parseInt(elem.getAttribute('data-time'));
+            if (timestamp) {
+                elem.innerText = getTimeAgoText(timestamp);
+            }
+        });
+    }
+
+    function getTimeAgoText(timestamp) {
+        const now = Date.now();
+        const seconds = Math.floor((now - timestamp) / 1000);
+        
+        if (seconds < 5) return 'Baru saja';
+        if (seconds < 60) return `${seconds} detik yang lalu`;
+        
+        const minutes = Math.floor(seconds / 60);
+        return `${minutes} menit ${seconds % 60} detik yang lalu`;
+    }
+
+    function handleAlarmLifecycle() {
+        if (activeCallsCount > 0) {
+            body.classList.add('alarm-active');
+            if (!isMuted) {
+                playAlarmAudio();
+            } else {
+                alarmAudio.pause();
+            }
+        } else {
+            body.classList.remove('alarm-active');
+            stopAlarmAudio();
+            isMuted = false;
+        }
+    }
+
+    function playAlarmAudio() {
+        alarmAudio.play().catch(error => {
+            console.log("Menunggu interaksi user untuk membunyikan suara.");
+            if (!document.getElementById('audioUnlocker')) {
+                const unlocker = document.createElement('div');
+                unlocker.id = 'audioUnlocker';
+                unlocker.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; display:flex; justify-content:center; align-items:center; z-index:9999; cursor:pointer;";
+                unlocker.innerHTML = "<h1>Klik di mana saja untuk mengaktifkan Suara Alarm</h1>";
+                unlocker.onclick = function() {
+                    isMuted = false;
+                    playAlarmAudio();
+                    this.remove();
+                };
+                document.body.appendChild(unlocker);
+            }
+        });
+    }
+
+    function stopAlarmAudio() {
+        alarmAudio.pause();
+        alarmAudio.currentTime = 0;
+    }
+
+    function muteAlarm() {
+        isMuted = true;
+        alarmAudio.pause();
+    }
+</script>
+
+</body>
+</html>
