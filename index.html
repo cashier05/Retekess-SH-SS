@@ -10,70 +10,674 @@
     <link rel="apple-touch-icon" href="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png">
     <link rel="manifest" href='data:application/manifest+json,{"name":"Panggil Alarm Supervisor","short_name":"SupervisorAlarm","start_url":".","display":"standalone","background_color":"%23f8fafc","theme_color":"%234f46e5","icons":[{"src":"https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #eef2ff;
             --bg: #f8fafc;
+            --bg-gradients: radial-gradient(at 0% 0%, rgba(79,70,229,0.06) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(14,165,233,0.05) 0px, transparent 50%);
             --card-bg: #ffffff;
-            --text: #1e293b;
+            --text: #0f172a;
             --text-light: #64748b;
+            --text-muted: #94a3b8;
             --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --danger-light: #fef2f2;
             --success: #10b981;
+            --success-dark: #059669;
+            --success-light: #ecfdf5;
             --info: #0ea5e9;
+            --info-light: #f0f9ff;
+            --warning: #f59e0b;
+            --warning-light: #fffbeb;
+            --slate: #64748b;
+            --slate-light: #f1f5f9;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --shadow-sm: 0 1px 2px 0 rgba(15,23,42,0.04);
+            --shadow: 0 4px 6px -1px rgba(15,23,42,0.05), 0 2px 4px -2px rgba(15,23,42,0.05);
+            --shadow-md: 0 10px 15px -3px rgba(15,23,42,0.06), 0 4px 6px -4px rgba(15,23,42,0.05);
+            --shadow-lg: 0 20px 25px -5px rgba(15,23,42,0.08), 0 8px 10px -6px rgba(15,23,42,0.05);
+            --shadow-xl: 0 25px 50px -12px rgba(15,23,42,0.15);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+        html, body { background: var(--bg); background-image: var(--bg-gradients); background-attachment: fixed; color: var(--text); min-height: 100vh; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 
-        header { background: var(--card-bg); padding: 18px 32px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #e2e8f0; }
-        header h1 { font-size: 1.25rem; font-weight: 800; color: var(--text); }
-        #statusBadge { background: #dcfce7; color: #166534; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        /* ============ HEADER ============ */
+        header {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .logo-badge {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 16px rgba(79,70,229,0.3);
+            flex-shrink: 0;
+        }
+        .logo-badge svg { width: 22px; height: 22px; color: white; }
+        .header-title-block h1 { font-size: 1.15rem; font-weight: 800; color: var(--text); letter-spacing: -0.01em; line-height: 1.2; }
+        .header-date { font-size: 0.72rem; color: var(--text-light); font-weight: 600; margin-top: 2px; }
 
-        .dashboard { padding: 32px; max-width: 1300px; margin: 0 auto; }
-        .section-title { font-size: 0.85rem; font-weight: 700; color: var(--text-light); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        #statusBadge {
+            background: linear-gradient(135deg, #d1fae5 0%, #dcfce7 100%);
+            color: #166534;
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #bbf7d0;
+        }
+        #statusBadge::before {
+            content: '';
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 0 rgba(16,185,129,0.7);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+            100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+        }
+        #statusBadge.offline { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+        #statusBadge.offline::before { background: #ef4444; animation: none; }
 
-        #emptyState { text-align: center; padding: 80px 20px; background: var(--card-bg); border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; margin-top: 10px; }
-        #emptyState h3 { color: var(--success); margin-bottom: 8px; font-size: 1.5rem; font-weight: 800; }
-        #emptyState p { color: var(--text-light); font-size: 0.95rem; }
+        /* ============ ONLINE/OFFLINE TOGGLE ============ */
+        .status-toggle-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 0.74rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .status-toggle-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+        .status-toggle-btn:active { transform: translateY(0); }
+        .status-toggle-btn i { font-size: 0.85rem; }
+        .status-toggle-btn.online { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-color: #059669; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+        .status-toggle-btn.online:hover { background: linear-gradient(135deg, #059669 0%, #047857 100%); }
+        .status-toggle-btn.offline { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border-color: #dc2626; box-shadow: 0 4px 12px rgba(239,68,68,0.3); }
+        .status-toggle-btn.offline:hover { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
 
-        #activeCallsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
+        /* ============ FLOATING PIP BUTTON ============ */
+        .btn-floating-pip {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+            color: white;
+            border: 3px solid #fff;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(79,70,229,0.4);
+            z-index: 1050;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            transition: all 0.2s;
+            overflow: hidden;
+            padding: 0;
+        }
+        .btn-floating-pip:hover { transform: scale(1.08); box-shadow: 0 14px 30px rgba(79,70,229,0.5); }
+        .btn-floating-pip:active { transform: scale(0.96); }
+        .btn-floating-pip.hidden { display: none; }
+        .btn-floating-pip img.pip-favicon {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+            pointer-events: none;
+        }
+        .btn-floating-pip .pip-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 800;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        .btn-floating-pip .pip-badge:empty { display: none; }
 
-        .call-card { background: var(--card-bg); border-radius: 20px; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; border-left: 6px solid var(--danger); animation: cardEntrance 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; }
-        @keyframes cardEntrance { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .call-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-        .pos-info h2 { font-size: 1.5rem; font-weight: 800; color: var(--text); }
-        .pos-info p { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-top: 2px; }
-        
-        .time-ago { font-size: 0.8rem; color: var(--danger); font-weight: 700; background: #fef2f2; padding: 6px 12px; border-radius: 12px; border: 1px solid #fee2e2; }
+        /* ============ PIP MINI WINDOW CONTENT ============ */
+        #pipContainer {
+            padding: 16px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-sizing: border-box;
+        }
+        #pipContainer * { box-sizing: border-box; }
+        .pip-header { display: flex; justify-content: space-between; align-items: center; }
+        .pip-title { font-size: 0.85rem; font-weight: 800; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
+        .pip-title .pip-logo {
+            width: 30px; height: 30px;
+            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            padding: 4px;
+        }
+        .pip-title .pip-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+        }
+        .pip-status-mini { font-size: 0.7rem; padding: 4px 10px; border-radius: 10px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+        .pip-status-mini.online { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+        .pip-status-mini.offline { background: rgba(239,68,68,0.2); color: #fca5a5; }
+        .pip-status-mini::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+        .pip-status-mini.online::before { background: #10b981; box-shadow: 0 0 0 0 rgba(16,185,129,0.7); animation: pulse 2s infinite; }
+        .pip-status-mini.offline::before { background: #ef4444; }
 
-        .note-area { margin-bottom: 20px; }
+        .pip-active-card {
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.4);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+        }
+        .pip-active-card.idle { background: rgba(148,163,184,0.1); border-color: rgba(148,163,184,0.3); }
+        .pip-active-count { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+        .pip-active-card.idle .pip-active-count { color: #94a3b8; }
+        .pip-active-card:not(.idle) .pip-active-count { color: #fca5a5; animation: pip-pulse 1s infinite; }
+        @keyframes pip-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .pip-active-label { font-size: 0.7rem; color: #cbd5e1; margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .pip-toggle-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.15s;
+        }
+        .pip-toggle-btn:active { transform: scale(0.97); }
+        .pip-toggle-btn.online { background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 12px rgba(16,185,129,0.4); }
+        .pip-toggle-btn.offline { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239,68,68,0.4); }
+
+        .pip-mute-btn {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: white;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            transition: all 0.15s;
+        }
+        .pip-mute-btn:hover { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); }
+        .pip-mute-btn.visible { display: inline-flex; }
+
+        .pip-footer { margin-top: auto; text-align: center; font-size: 0.65rem; color: #64748b; font-weight: 500; }
+
+        /* ============ DASHBOARD ============ */
+        .dashboard { padding: 28px 24px 120px; max-width: 1320px; margin: 0 auto; }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 36px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 18px;
+            padding: 20px 22px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .stat-icon {
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .stat-icon svg { width: 22px; height: 22px; }
+        .stat-card.active .stat-icon { background: var(--danger-light); color: var(--danger); }
+        .stat-card.total .stat-icon { background: var(--info-light); color: var(--info); }
+        .stat-card.done .stat-icon { background: var(--success-light); color: var(--success); }
+        .stat-card.cancel .stat-icon { background: var(--warning-light); color: var(--warning); }
+        .stat-info { flex: 1; min-width: 0; }
+        .stat-value { font-size: 1.7rem; font-weight: 900; color: var(--text); line-height: 1; letter-spacing: -0.02em; }
+        .stat-label { font-size: 0.78rem; color: var(--text-light); font-weight: 600; margin-top: 4px; }
+
+        /* Section */
+        .section-block { margin-bottom: 36px; }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .section-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: -0.01em;
+        }
+        .section-title .count-pill {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 3px 11px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+        .section-subtitle { font-size: 0.78rem; color: var(--text-light); font-weight: 500; }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 56px 24px;
+            background: var(--card-bg);
+            border-radius: 22px;
+            box-shadow: var(--shadow-sm);
+            border: 1px dashed var(--border);
+        }
+        .empty-state .emoji-circle {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+        .empty-state h3 { color: var(--text); margin-bottom: 6px; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em; }
+        .empty-state p { color: var(--text-light); font-size: 0.88rem; max-width: 320px; margin: 0 auto; line-height: 1.5; }
+
+        /* Active Calls Grid */
+        #activeCallsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+
+        .call-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 22px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            border-left: 6px solid var(--danger);
+            animation: cardEntrance 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .call-card::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 140px; height: 140px;
+            background: radial-gradient(circle, rgba(239,68,68,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        @keyframes cardEntrance { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .call-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; gap: 12px; }
+        .pos-info h2 { font-size: 1.4rem; font-weight: 800; color: var(--text); letter-spacing: -0.01em; }
+        .pos-info p { font-size: 0.7rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-top: 3px; letter-spacing: 0.5px; }
+
+        .time-ago {
+            font-size: 0.75rem;
+            color: var(--danger);
+            font-weight: 700;
+            background: var(--danger-light);
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 1px solid #fecaca;
+            white-space: nowrap;
+        }
+
+        .note-area { margin-bottom: 18px; }
         .quick-notes { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .btn-quick { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; color: var(--text); font-weight: 700; transition: all 0.2s; }
-        .btn-quick:hover { background: #e2e8f0; border-color: #94a3b8; }
-        
-        .note-input { width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 0.9rem; background: #f8fafc; transition: all 0.2s; color: var(--text); }
-        .note-input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        .btn-quick {
+            background: var(--slate-light);
+            border: 1px solid var(--border);
+            padding: 7px 13px;
+            border-radius: 10px;
+            font-size: 0.74rem;
+            cursor: pointer;
+            color: var(--text);
+            font-weight: 700;
+            transition: all 0.15s;
+        }
+        .btn-quick:hover { background: #e2e8f0; border-color: #94a3b8; transform: translateY(-1px); }
+        .btn-quick:active { transform: translateY(0); }
+
+        .note-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            background: var(--bg);
+            transition: all 0.15s;
+            color: var(--text);
+            font-family: inherit;
+        }
+        .note-input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 4px rgba(79,70,229,0.1); }
 
         .card-actions { display: flex; gap: 10px; }
-        .btn-action { flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 0.85rem; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: all 0.2s; color: white; letter-spacing: 0.5px; }
-        .btn-send-note { background-color: var(--info); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2); }
-        .btn-send-note:hover { background: #0284c7; }
-        .btn-complete { background-color: var(--success); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
-        .btn-complete:hover { background: #059669; }
+        .btn-action {
+            flex: 1;
+            padding: 13px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.15s;
+            color: white;
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-action:hover { transform: translateY(-1px); }
+        .btn-action:active { transform: translateY(0); }
+        .btn-send-note { background-color: var(--info); box-shadow: 0 4px 12px rgba(14,165,233,0.25); }
+        .btn-send-note:hover { background: #0284c7; box-shadow: 0 6px 16px rgba(14,165,233,0.35); }
+        .btn-complete { background-color: var(--success); box-shadow: 0 4px 12px rgba(16,185,129,0.25); }
+        .btn-complete:hover { background: var(--success-dark); box-shadow: 0 6px 16px rgba(16,185,129,0.35); }
 
-        #flashOverlay { position: fixed; inset: 0; background: rgba(239, 68, 68, 0.15); display: none; z-index: 1000; pointer-events: none; animation: screenFlash 0.8s infinite; }
+        /* ============ HISTORY SECTION ============ */
+        .history-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .filter-group {
+            display: inline-flex;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 4px;
+            gap: 2px;
+        }
+        .filter-btn {
+            background: transparent;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 9px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: all 0.15s;
+        }
+        .filter-btn:hover { color: var(--text); }
+        .filter-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 6px rgba(79,70,229,0.25); }
+
+        .btn-clear-all {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--danger);
+            padding: 8px 14px;
+            border-radius: 11px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .btn-clear-all:hover { background: var(--danger-light); border-color: #fecaca; }
+        .btn-clear-all:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #historyList { display: flex; flex-direction: column; gap: 10px; }
+        .history-card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s;
+            animation: cardEntrance 0.3s ease;
+        }
+        .history-card:hover { box-shadow: var(--shadow); border-color: #cbd5e1; }
+
+        .history-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.1rem;
+        }
+        .history-card.completed .history-icon { background: var(--success-light); }
+        .history-card.cancelled .history-icon { background: var(--warning-light); }
+
+        .history-body { flex: 1; min-width: 0; }
+        .history-top-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+        .history-pos-name { font-size: 1rem; font-weight: 800; color: var(--text); letter-spacing: -0.01em; }
+        .history-status-badge {
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .history-card.completed .history-status-badge { background: var(--success-light); color: var(--success-dark); }
+        .history-card.cancelled .history-status-badge { background: var(--warning-light); color: #92400e; }
+
+        .history-meta { font-size: 0.75rem; color: var(--text-light); font-weight: 500; }
+        .history-note {
+            font-size: 0.83rem;
+            color: var(--text);
+            margin-top: 6px;
+            background: var(--bg);
+            padding: 8px 12px;
+            border-radius: 9px;
+            border-left: 3px solid var(--info);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        .history-note .note-label { font-size: 0.68rem; color: var(--text-light); font-weight: 700; display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+        .btn-delete-history {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+        .btn-delete-history:hover { background: var(--danger-light); color: var(--danger); border-color: #fecaca; }
+        .btn-delete-history svg { width: 16px; height: 16px; }
+
+        /* ============ ALARM OVERLAY ============ */
+        #flashOverlay { position: fixed; inset: 0; background: rgba(239,68,68,0.18); display: none; z-index: 1000; pointer-events: none; animation: screenFlash 0.8s infinite; }
         @keyframes screenFlash { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
         body.alarm-active #flashOverlay { display: block; }
 
-        #alarmControl { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 16px 28px; border-radius: 40px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); z-index: 1100; display: none; align-items: center; gap: 24px; width: 90%; max-width: 420px; justify-content: space-between; border: 1px solid rgba(255,255,255,0.1); }
+        #alarmControl {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 14px 18px 14px 22px;
+            border-radius: 30px;
+            box-shadow: 0 20px 40px -5px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+            z-index: 1100;
+            display: none;
+            align-items: center;
+            gap: 18px;
+            width: 92%;
+            max-width: 420px;
+            justify-content: space-between;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
         body.alarm-active #alarmControl { display: flex; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes slideUp { from { bottom: -100px; opacity: 0; } to { bottom: 24px; opacity: 1; } }
-        #alarmControl p { font-weight: 800; color: #f87171; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
-        .btn-mute { background-color: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; transition: background 0.2s; }
-        .btn-mute:hover { background: #dc2626; }
+        #alarmControl p { font-weight: 800; color: #f87171; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        #alarmControl .alarm-dot { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; animation: pulse-red 1s infinite; }
+        @keyframes pulse-red { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.6; } }
+        .btn-mute {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.4px;
+            transition: all 0.15s;
+            box-shadow: 0 4px 12px rgba(239,68,68,0.4);
+        }
+        .btn-mute:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(239,68,68,0.5); }
+
+        /* ============ TOAST ============ */
+        #toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--text);
+            color: white;
+            padding: 12px 22px;
+            border-radius: 30px;
+            box-shadow: var(--shadow-lg);
+            font-weight: 700;
+            font-size: 0.85rem;
+            z-index: 3000;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* Audio Unlocker Overlay */
+        #audioUnlocker {
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.92);
+            backdrop-filter: blur(8px);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            cursor: pointer;
+            font-family: inherit;
+            text-align: center;
+            padding: 24px;
+        }
+        #audioUnlocker .unlock-box { max-width: 360px; }
+        #audioUnlocker .unlock-icon { font-size: 3rem; margin-bottom: 16px; }
+        #audioUnlocker h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
+        #audioUnlocker p { color: #cbd5e1; font-size: 0.9rem; line-height: 1.5; }
+
+        @media (max-width: 640px) {
+            header { padding: 12px 16px; }
+            .header-title-block h1 { font-size: 1rem; }
+            .header-date { font-size: 0.68rem; }
+            .dashboard { padding: 20px 14px 120px; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .stat-card { padding: 16px; }
+            .stat-icon { width: 40px; height: 40px; }
+            .stat-value { font-size: 1.4rem; }
+            .stat-label { font-size: 0.7rem; }
+            #activeCallsGrid { grid-template-columns: 1fr; gap: 14px; }
+            .call-card { padding: 18px; }
+            .history-card { padding: 14px; gap: 12px; }
+            .btn-delete-history { width: 32px; height: 32px; }
+        }
     </style>
 </head>
 <body>
@@ -81,24 +685,172 @@
 <div id="flashOverlay"></div>
 
 <div id="alarmControl">
-    <p>🚨 ALARM AKTIF!</p>
+    <p><span class="alarm-dot"></span> ALARM AKTIF!</p>
     <button class="btn-mute" onclick="muteAlarm()">Matikan Suara</button>
 </div>
 
+<div id="toast"></div>
+
 <header>
-    <h1>Dashboard Supervisor</h1>
-    <div id="statusBadge">Koneksi Aktif</div>
+    <div class="header-left">
+        <div class="logo-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+            </svg>
+        </div>
+        <div class="header-title-block">
+            <h1>Dashboard Supervisor</h1>
+            <div class="header-date" id="headerDate">-</div>
+        </div>
+    </div>
+    <div class="header-right">
+        <div id="statusBadge">Mengecek...</div>
+        <button id="statusToggleBtn" class="status-toggle-btn offline" onclick="toggleManualStatus()" title="Aktifkan/Nonaktifkan status Online">
+            <i class="fa-solid fa-power-off"></i>
+            <span id="statusToggleText">Aktifkan</span>
+        </button>
+    </div>
 </header>
 
-<div class="dashboard">
-    <div class="section-title">Daftar Panggilan Masuk</div>
-    
-    <div id="emptyState">
-        <h3>✨ Semua Aman</h3>
-        <p>Tidak ada panggilan aktif saat ini.</p>
+<!-- Hidden PiP content -->
+<div id="pipContainer" style="display:none;">
+    <div class="pip-header">
+        <div class="pip-title">
+            <div class="pip-logo"><img src="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png" alt="Panggil Alarm" referrerpolicy="no-referrer"></div>
+            <span>Supervisor</span>
+        </div>
+        <div class="pip-status-mini offline" id="pipStatusMini">Offline</div>
     </div>
 
-    <div id="activeCallsGrid"></div>
+    <div class="pip-active-card idle" id="pipActiveCard">
+        <div class="pip-active-count" id="pipActiveCount">0</div>
+        <div class="pip-active-label">Panggilan Aktif</div>
+    </div>
+
+    <button class="pip-toggle-btn offline" id="pipToggleBtn" onclick="toggleManualStatus()">
+        <i class="fa-solid fa-power-off"></i>
+        <span id="pipToggleText">Aktifkan Online</span>
+    </button>
+
+    <button class="pip-mute-btn" id="pipMuteBtn" onclick="muteAlarm()">
+        <i class="fa-solid fa-volume-xmark"></i>
+        <span>Matikan Suara</span>
+    </button>
+
+    <div class="pip-footer" id="pipFooter">Panggil Alarm Supervisor</div>
+</div>
+
+<button class="btn-floating-pip" id="floatingPipBtn" onclick="openPipWindow()" title="Buka mode mengambang (always-on-top)" aria-label="Buka mode mengambang">
+    <img src="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png" alt="Panggil Alarm" class="pip-favicon" referrerpolicy="no-referrer">
+    <span class="pip-badge" id="floatingPipBadge"></span>
+</button>
+
+<div class="dashboard">
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card active">
+            <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-4-5.7V5a2 2 0 0 0-4 0v.3A6 6 0 0 0 6 11v3.2c0 .5-.2 1-.6 1.4L4 17h5"/>
+                    <path d="M9 17a3 3 0 0 0 6 0"/>
+                </svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="statActive">0</div>
+                <div class="stat-label">Panggilan Aktif</div>
+            </div>
+        </div>
+        <div class="stat-card total">
+            <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3v18h18"/>
+                    <path d="M7 17l4-4 3 3 5-6"/>
+                </svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">Total Hari Ini</div>
+            </div>
+        </div>
+        <div class="stat-card done">
+            <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="statDone">0</div>
+                <div class="stat-label">Selesai</div>
+            </div>
+        </div>
+        <div class="stat-card cancel">
+            <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="statCancel">0</div>
+                <div class="stat-label">Dibatalkan</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Calls -->
+    <div class="section-block">
+        <div class="section-header">
+            <div class="section-title">
+                Panggilan Aktif
+                <span class="count-pill" id="activeCountPill">0</span>
+            </div>
+            <div class="section-subtitle">Panggilan yang sedang menunggu respon</div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+            <div class="emoji-circle">✨</div>
+            <h3>Semua Aman</h3>
+            <p>Tidak ada panggilan aktif saat ini. Sistem siap menerima panggilan dari kasir.</p>
+        </div>
+
+        <div id="activeCallsGrid"></div>
+    </div>
+
+    <!-- History -->
+    <div class="section-block">
+        <div class="section-header">
+            <div class="section-title">
+                Riwayat Panggilan
+                <span class="count-pill" id="historyCountPill" style="background: var(--slate-light); color: var(--text-light);">0</span>
+            </div>
+            <div class="history-controls">
+                <div class="filter-group">
+                    <button class="filter-btn active" data-filter="all" onclick="filterHistory('all')">Semua</button>
+                    <button class="filter-btn" data-filter="completed" onclick="filterHistory('completed')">Selesai</button>
+                    <button class="filter-btn" data-filter="cancelled" onclick="filterHistory('cancelled')">Batal</button>
+                </div>
+                <button class="btn-clear-all" id="btnClearAll" onclick="clearAllHistory()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/>
+                    </svg>
+                    Hapus Semua
+                </button>
+            </div>
+        </div>
+
+        <div id="historyEmptyState" class="empty-state">
+            <div class="emoji-circle" style="background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">📋</div>
+            <h3>Belum Ada Riwayat</h3>
+            <p>Riwayat panggilan yang sudah selesai atau dibatalkan akan tampil di sini. Riwayat otomatis terhapus saat berganti hari.</p>
+        </div>
+
+        <div id="historyList"></div>
+    </div>
 </div>
 
 <audio id="alarmAudio" loop preload="auto">
@@ -120,36 +872,102 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    const myConnectionRef = database.ref('status_supervisor').push();
-    database.ref('.info/connected').on('value', (snap) => {
-        if (snap.val() === true) {
-            myConnectionRef.onDisconnect().remove();
-            myConnectionRef.set({ onlineAt: firebase.database.ServerValue.TIMESTAMP });
+    // ============ MANUAL STATUS (no onDisconnect — survives browser close) ============
+    // Pakai fixed key per perangkat (disimpan di localStorage) supaya status bertahan
+    // di Firebase bahkan ketika aplikasi/tab ditutup. Hanya tombol Offline yang
+    // akan menghapusnya.
+    const SUPERVISOR_KEY = (() => {
+        let k = localStorage.getItem('supervisorDeviceKey');
+        if (!k) {
+            k = 'dev_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+            localStorage.setItem('supervisorDeviceKey', k);
         }
-    });
+        return k;
+    })();
+    const myStatusRef = database.ref(`status_supervisor/${SUPERVISOR_KEY}`);
+
+    let isManualOnline = false;
+    let pipWindow = null;
 
     const alarmAudio = document.getElementById('alarmAudio');
     let isMuted = false;
     let activeCallsCount = 0;
     let timeUpdateInterval = null;
+    let activeCallsData = {};
+    let historyData = {};
+    let currentFilter = 'all';
 
     const emptyState = document.getElementById('emptyState');
     const callsGrid = document.getElementById('activeCallsGrid');
+    const historyList = document.getElementById('historyList');
+    const historyEmptyState = document.getElementById('historyEmptyState');
+    const statusBadge = document.getElementById('statusBadge');
+    const statusToggleBtn = document.getElementById('statusToggleBtn');
+    const statusToggleText = document.getElementById('statusToggleText');
+    const floatingPipBtn = document.getElementById('floatingPipBtn');
+    const floatingPipBadge = document.getElementById('floatingPipBadge');
     const body = document.body;
+    const btnClearAll = document.getElementById('btnClearAll');
 
+    // ============ INIT ============
     window.onload = function() {
+        updateHeaderDate();
+        setInterval(updateHeaderDate, 60000); // update setiap menit
+        cleanupOldEntries(); // hapus otomatis beda hari
+        setInterval(cleanupOldEntries, 5 * 60 * 1000); // cek tiap 5 menit
         initializeRealtimeListener();
+        initManualStatusListener(); // dengarkan perubahan status Online/Offline
+        checkPipSupport();
+
+        // Pre-unlock audio
         alarmAudio.play().then(() => {
             alarmAudio.pause();
             alarmAudio.currentTime = 0;
-        }).catch(e => console.log("Audio waiting for interaction"));
+        }).catch(() => console.log("Audio menunggu interaksi pengguna"));
     };
 
-    let activeCallsData = {};
+    function updateHeaderDate() {
+        const now = new Date();
+        const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' };
+        document.getElementById('headerDate').innerText = now.toLocaleDateString('id-ID', opts) + ' WIB';
+    }
 
+    // ============ AUTO-DELETE ON DAY CHANGE ============
+    function getJakartaDateString(timestamp) {
+        const date = timestamp ? new Date(timestamp) : new Date();
+        // 'en-CA' => format YYYY-MM-DD
+        return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+    }
+
+    function cleanupOldEntries() {
+        const today = getJakartaDateString();
+        database.ref('panggilan').once('value', (snapshot) => {
+            const updates = {};
+            let deletedCount = 0;
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                if (data.timestamp) {
+                    const entryDate = getJakartaDateString(data.timestamp);
+                    if (entryDate !== today) {
+                        updates[childSnapshot.key] = null;
+                        deletedCount++;
+                    }
+                }
+            });
+            if (deletedCount > 0) {
+                database.ref('panggilan').update(updates).then(() => {
+                    console.log(`Auto-deleted ${deletedCount} old entries (beda hari)`);
+                    showToast(`🧹 ${deletedCount} riwayat lama dihapus otomatis`, 'info');
+                });
+            }
+        });
+    }
+
+    // ============ REALTIME LISTENER ============
     function initializeRealtimeListener() {
         database.ref('panggilan').on('value', (snapshot) => {
             activeCallsData = {};
+            historyData = {};
             activeCallsCount = 0;
 
             snapshot.forEach((childSnapshot) => {
@@ -158,62 +976,220 @@
                 if (data.status === 'active') {
                     activeCallsData[key] = data;
                     activeCallsCount++;
+                } else if (data.status === 'completed' || data.status === 'cancelled') {
+                    historyData[key] = data;
                 }
             });
 
             renderCalls();
+            renderHistory();
+            updateStats();
             handleAlarmLifecycle();
+            updatePipActiveCount();
+            updateFloatingBadge();
         });
     }
 
+    // ============ MANUAL STATUS LISTENER (Online/Offline) ============
+    function initManualStatusListener() {
+        // Dengarkan status supervisor sendiri
+        myStatusRef.on('value', (snap) => {
+            const val = snap.val();
+            isManualOnline = !!val;
+            updateStatusUI();
+        });
+
+        // Juga dengarkan total supervisor online untuk badge koneksi
+        database.ref('status_supervisor').on('value', (snap) => {
+            const count = snap.numChildren();
+            if (count > 0) {
+                statusBadge.className = '';
+                statusBadge.innerText = `${count} Online`;
+            } else {
+                statusBadge.className = 'offline';
+                statusBadge.innerText = 'Semua Offline';
+            }
+        });
+    }
+
+    function toggleManualStatus() {
+        if (isManualOnline) {
+            // Set Offline
+            if (!confirm('Anda akan menjadi OFFLINE. Kasir tidak akan bisa memanggil Anda. Lanjutkan?')) return;
+            myStatusRef.remove().then(() => {
+                showToast('🔴 Anda sekarang OFFLINE', 'warning');
+            });
+        } else {
+            // Set Online
+            myStatusRef.set({
+                onlineAt: firebase.database.ServerValue.TIMESTAMP,
+                device: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop'
+            }).then(() => {
+                showToast('🟢 Anda sekarang ONLINE', 'success');
+            });
+        }
+    }
+
+    function updateStatusUI() {
+        if (isManualOnline) {
+            statusToggleBtn.className = 'status-toggle-btn online';
+            statusToggleBtn.title = 'Klik untuk menjadi Offline';
+            statusToggleText.innerText = 'Online';
+            statusToggleBtn.querySelector('i').className = 'fa-solid fa-circle-check';
+        } else {
+            statusToggleBtn.className = 'status-toggle-btn offline';
+            statusToggleBtn.title = 'Klik untuk menjadi Online';
+            statusToggleText.innerText = 'Offline';
+            statusToggleBtn.querySelector('i').className = 'fa-solid fa-power-off';
+        }
+        updatePipStatus();
+    }
+
+    // ============ FLOATING PIP WINDOW ============
+    function checkPipSupport() {
+        if (!('documentPictureInPicture' in window)) {
+            floatingPipBtn.style.display = 'none';
+        }
+    }
+
+    async function openPipWindow() {
+        if (!('documentPictureInPicture' in window)) {
+            showToast('⚠️ Browser tidak mendukung mode mengambang. Gunakan Chrome/Edge terbaru.', 'warning');
+            return;
+        }
+        if (pipWindow) {
+            pipWindow.focus();
+            return;
+        }
+        try {
+            const pip = await documentPictureInPicture.requestWindow({
+                width: 320,
+                height: 360
+            });
+            pipWindow = pip;
+
+            // Copy styles to PiP window
+            const allStyles = document.querySelectorAll('style, link[rel="stylesheet"]');
+            allStyles.forEach(node => {
+                pip.document.head.appendChild(node.cloneNode(true));
+            });
+
+            // Move the pipContainer into the PiP window
+            const pipContainer = document.getElementById('pipContainer');
+            pip.document.body.style.margin = '0';
+            pip.document.body.style.background = '#0f172a';
+            pip.document.body.appendChild(pipContainer);
+            pipContainer.style.display = 'flex';
+
+            // Update content immediately
+            updatePipStatus();
+            updatePipActiveCount();
+
+            // Restore on close
+            pip.addEventListener('pagehide', () => {
+                // Move container back to original document (hidden)
+                pipContainer.style.display = 'none';
+                document.body.appendChild(pipContainer);
+                pipWindow = null;
+            });
+
+            showToast('✅ Mode mengambang aktif', 'success');
+        } catch (e) {
+            console.error('PiP error:', e);
+            showToast('Gagal membuka mode mengambang: ' + e.message, 'error');
+        }
+    }
+
+    function updatePipStatus() {
+        const pipStatusMini = document.getElementById('pipStatusMini');
+        const pipToggleBtn = document.getElementById('pipToggleBtn');
+        const pipToggleText = document.getElementById('pipToggleText');
+        if (!pipStatusMini) return;
+
+        if (isManualOnline) {
+            pipStatusMini.className = 'pip-status-mini online';
+            pipStatusMini.innerText = 'Online';
+            pipToggleBtn.className = 'pip-toggle-btn offline';
+            pipToggleText.innerText = 'Jadi Offline';
+        } else {
+            pipStatusMini.className = 'pip-status-mini offline';
+            pipStatusMini.innerText = 'Offline';
+            pipToggleBtn.className = 'pip-toggle-btn online';
+            pipToggleText.innerText = 'Jadi Online';
+        }
+    }
+
+    function updatePipActiveCount() {
+        const pipActiveCount = document.getElementById('pipActiveCount');
+        const pipActiveCard = document.getElementById('pipActiveCard');
+        const pipMuteBtn = document.getElementById('pipMuteBtn');
+        if (!pipActiveCount) return;
+        pipActiveCount.innerText = activeCallsCount;
+        if (activeCallsCount > 0) {
+            pipActiveCard.classList.remove('idle');
+            if (pipMuteBtn) pipMuteBtn.classList.add('visible');
+        } else {
+            pipActiveCard.classList.add('idle');
+            if (pipMuteBtn) pipMuteBtn.classList.remove('visible');
+        }
+    }
+
+    function updateFloatingBadge() {
+        if (!floatingPipBadge) return;
+        floatingPipBadge.innerText = activeCallsCount > 0 ? activeCallsCount : '';
+    }
+
+    // ============ ACTIVE CALLS ============
     function sendNoteToKasir(callId) {
         const inputElem = document.getElementById(`note-input-${callId}`);
         const noteText = inputElem ? inputElem.value.trim() : "";
         if (!noteText) {
-            alert("Silakan ketik atau pilih pesan balasan terlebih dahulu.");
+            showToast("⚠️ Ketik atau pilih pesan balasan dulu", 'warning');
             return;
         }
-
         database.ref(`panggilan/${callId}`).update({
             replyNote: noteText,
             repliedAt: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => alert("Pesan terkirim ke Kasir!"));
+        }).then(() => showToast("✅ Pesan terkirim ke Kasir", 'success'));
     }
 
     function completeCall(callId) {
         const inputElem = document.getElementById(`note-input-${callId}`);
         const noteText = inputElem ? inputElem.value.trim() : "";
-
         const updateData = {
             status: 'completed',
             completedAt: firebase.database.ServerValue.TIMESTAMP
         };
         if (noteText) updateData.replyNote = noteText;
-
         database.ref(`panggilan/${callId}`).update(updateData);
-        if (isMuted) isMuted = false; 
+        showToast("✅ Panggilan diselesaikan", 'success');
+        if (isMuted) isMuted = false;
     }
 
     function setQuickNote(callId, text) {
         const inputElem = document.getElementById(`note-input-${callId}`);
-        if (inputElem) inputElem.value = text;
+        if (inputElem) {
+            inputElem.value = text;
+            inputElem.focus();
+        }
     }
 
     function renderCalls() {
         callsGrid.innerHTML = '';
         if (activeCallsCount === 0) {
             emptyState.style.display = 'block';
-            clearInterval(timeUpdateInterval);
+            if (timeUpdateInterval) {
+                clearInterval(timeUpdateInterval);
+                timeUpdateInterval = null;
+            }
             return;
         }
 
         emptyState.style.display = 'none';
         const sortedKeys = Object.keys(activeCallsData).sort((a, b) => activeCallsData[b].timestamp - activeCallsData[a].timestamp);
-
         sortedKeys.forEach(key => {
             const call = activeCallsData[key];
-            const card = createCallCard(key, call);
-            callsGrid.appendChild(card);
+            callsGrid.appendChild(createCallCard(key, call));
         });
 
         if (!timeUpdateInterval) {
@@ -227,7 +1203,7 @@
         card.className = 'call-card';
         card.id = `card-${id}`;
 
-        const kassaType = data.posId.includes('kassa') ? 'Kassa Utama' : 'Counter Area';
+        const kassaType = (data.posId && data.posId.includes('kassa')) ? 'Kassa Utama' : 'Counter Area';
         const existingNote = data.replyNote || '';
 
         card.innerHTML = `
@@ -238,27 +1214,41 @@
                 </div>
                 <div class="time-ago" id="timeago-${id}" data-time="${data.timestamp}">Menghitung...</div>
             </div>
-            
             <div class="note-area">
                 <div class="quick-notes">
                     <button class="btn-quick" onclick="setQuickNote('${id}', 'Saya segera ke sana')">🏃 Segera ke sana</button>
                     <button class="btn-quick" onclick="setQuickNote('${id}', 'Tunggu sebentar 2 menit')">⏱️ Tunggu 2 mnt</button>
                 </div>
-                <input type="text" class="note-input" id="note-input-${id}" placeholder="Ketik balasan pesan..." value="${existingNote}">
+                <input type="text" class="note-input" id="note-input-${id}" placeholder="Ketik balasan pesan..." value="${escapeHtml(existingNote)}">
             </div>
-
             <div class="card-actions">
-                <button class="btn-action btn-send-note" onclick="sendNoteToKasir('${id}')">Kirim</button>
-                <button class="btn-action btn-complete" onclick="completeCall('${id}')">Selesai</button>
+                <button class="btn-action btn-send-note" onclick="sendNoteToKasir('${id}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                    Kirim
+                </button>
+                <button class="btn-action btn-complete" onclick="completeCall('${id}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Selesai
+                </button>
             </div>
         `;
         return card;
     }
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
     function updateAllTimeAgos() {
         document.querySelectorAll('.time-ago').forEach(elem => {
-            const timestamp = parseInt(elem.getAttribute('data-time'));
-            if (timestamp) elem.innerText = getTimeAgoText(timestamp);
+            const ts = parseInt(elem.getAttribute('data-time'));
+            if (ts) elem.innerText = getTimeAgoText(ts);
         });
     }
 
@@ -271,6 +1261,138 @@
         return `${minutes} mnt ${seconds % 60} dtk lalu`;
     }
 
+    // ============ HISTORY ============
+    function renderHistory() {
+        historyList.innerHTML = '';
+        let entries = Object.entries(historyData);
+
+        // Filter
+        if (currentFilter !== 'all') {
+            entries = entries.filter(([k, d]) => d.status === currentFilter);
+        }
+
+        // Sort by most recent (use completedAt/cancelledAt if available, else timestamp)
+        entries.sort((a, b) => {
+            const ta = a[1].completedAt || a[1].cancelledAt || a[1].timestamp;
+            const tb = b[1].completedAt || b[1].cancelledAt || b[1].timestamp;
+            return tb - ta;
+        });
+
+        document.getElementById('historyCountPill').innerText = entries.length;
+
+        if (entries.length === 0) {
+            historyEmptyState.style.display = 'block';
+            btnClearAll.disabled = true;
+            return;
+        }
+
+        historyEmptyState.style.display = 'none';
+        btnClearAll.disabled = Object.keys(historyData).length === 0;
+
+        entries.forEach(([key, data]) => {
+            historyList.appendChild(createHistoryCard(key, data));
+        });
+    }
+
+    function createHistoryCard(id, data) {
+        const card = document.createElement('div');
+        card.className = `history-card ${data.status}`;
+        card.id = `history-${id}`;
+
+        const statusText = data.status === 'completed' ? 'Selesai' : 'Dibatalkan';
+        const statusIcon = data.status === 'completed' ? '✓' : '✕';
+        const eventTime = data.completedAt || data.cancelledAt || data.timestamp;
+        const kassaType = (data.posId && data.posId.includes('kassa')) ? 'Kassa Utama' : 'Counter Area';
+        const timeStr = formatDateTime(eventTime);
+
+        const noteBlock = data.replyNote
+            ? `<div class="history-note"><span class="note-label">💬 Balasan</span>${escapeHtml(data.replyNote)}</div>`
+            : '';
+
+        card.innerHTML = `
+            <div class="history-icon">${statusIcon}</div>
+            <div class="history-body">
+                <div class="history-top-row">
+                    <span class="history-pos-name">${data.posName}</span>
+                    <span class="history-status-badge">${statusText}</span>
+                </div>
+                <div class="history-meta">${kassaType} • ${timeStr}</div>
+                ${noteBlock}
+            </div>
+            <button class="btn-delete-history" onclick="deleteHistoryItem('${id}')" title="Hapus riwayat ini">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+            </button>
+        `;
+        return card;
+    }
+
+    function formatDateTime(timestamp) {
+        if (!timestamp) return '-';
+        const d = new Date(timestamp);
+        return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) + ' WIB';
+    }
+
+    function deleteHistoryItem(id) {
+        if (!confirm('Hapus riwayat panggilan ini?')) return;
+        database.ref(`panggilan/${id}`).remove().then(() => {
+            showToast('🗑️ Riwayat dihapus', 'success');
+        }).catch(() => showToast('Gagal menghapus', 'error'));
+    }
+
+    function clearAllHistory() {
+        const total = Object.keys(historyData).length;
+        if (total === 0) {
+            showToast('Tidak ada riwayat untuk dihapus', 'info');
+            return;
+        }
+        if (!confirm(`Hapus semua ${total} riwayat panggilan? Tindakan ini tidak bisa dibatalkan.`)) return;
+        const updates = {};
+        Object.keys(historyData).forEach(k => updates[k] = null);
+        database.ref('panggilan').update(updates).then(() => {
+            showToast(`🧹 ${total} riwayat dihapus`, 'success');
+        }).catch(() => showToast('Gagal menghapus', 'error'));
+    }
+
+    function filterHistory(filter) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-filter') === filter);
+        });
+        renderHistory();
+    }
+
+    // ============ STATS ============
+    function updateStats() {
+        const total = activeCallsCount + Object.keys(historyData).length;
+        const done = Object.values(historyData).filter(d => d.status === 'completed').length;
+        const cancelled = Object.values(historyData).filter(d => d.status === 'cancelled').length;
+
+        animateNumber('statActive', activeCallsCount);
+        animateNumber('statTotal', total);
+        animateNumber('statDone', done);
+        animateNumber('statCancel', cancelled);
+        document.getElementById('activeCountPill').innerText = activeCallsCount;
+    }
+
+    function animateNumber(elemId, target) {
+        const el = document.getElementById(elemId);
+        const current = parseInt(el.innerText) || 0;
+        if (current === target) return;
+        const step = target > current ? 1 : -1;
+        let val = current;
+        const iv = setInterval(() => {
+            val += step;
+            el.innerText = val;
+            if (val === target) clearInterval(iv);
+        }, 50);
+    }
+
+    // ============ ALARM ============
     function handleAlarmLifecycle() {
         if (activeCallsCount > 0) {
             body.classList.add('alarm-active');
@@ -288,8 +1410,13 @@
             if (!document.getElementById('audioUnlocker')) {
                 const unlocker = document.createElement('div');
                 unlocker.id = 'audioUnlocker';
-                unlocker.style = "position:fixed; inset:0; background:rgba(0,0,0,0.85); color:white; display:flex; justify-content:center; align-items:center; z-index:9999; cursor:pointer; font-family:sans-serif; text-align:center; padding:20px;";
-                unlocker.innerHTML = "<h1>🔊 Klik di mana saja untuk mengaktifkan Suara Alarm</h1>";
+                unlocker.innerHTML = `
+                    <div class="unlock-box">
+                        <div class="unlock-icon">🔊</div>
+                        <h2>Aktifkan Suara Alarm</h2>
+                        <p>Klik di mana saja untuk mengaktifkan notifikasi suara alarm supervisor.</p>
+                    </div>
+                `;
                 unlocker.onclick = function() {
                     isMuted = false;
                     playAlarmAudio();
@@ -308,6 +1435,24 @@
     function muteAlarm() {
         isMuted = true;
         alarmAudio.pause();
+        showToast('🔇 Suara alarm dimatikan sementara', 'info');
+    }
+
+    // ============ TOAST ============
+    let toastTimer = null;
+    function showToast(text, type = 'info') {
+        const toast = document.getElementById('toast');
+        toast.innerText = text;
+        const bg = {
+            success: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+            error: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+            warning: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
+            info: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
+        };
+        toast.style.background = bg[type] || bg.info;
+        toast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
     }
 </script>
 
