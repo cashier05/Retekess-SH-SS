@@ -888,6 +888,17 @@
 
     let isManualOnline = false;
     let pipWindow = null;
+    // Reference ke elemen PiP (di-update saat PiP dibuka)
+    let pipElements = {
+        statusMini: null,
+        toggleBtn: null,
+        toggleText: null,
+        activeCount: null,
+        activeCard: null,
+        muteBtn: null
+    };
+    let wakeLock = null;
+    let notificationPermission = 'default';
 
     const alarmAudio = document.getElementById('alarmAudio');
     let isMuted = false;
@@ -918,6 +929,15 @@
         initializeRealtimeListener();
         initManualStatusListener(); // dengarkan perubahan status Online/Offline
         checkPipSupport();
+        requestWakeLock(); // layar tetap menyala
+        requestNotificationPermission(); // minta izin notifikasi browser
+
+        // Re-acquire wake lock when page becomes visible again
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && wakeLock === null) {
+                requestWakeLock();
+            }
+        });
 
         // Pre-unlock audio
         alarmAudio.play().then(() => {
@@ -964,11 +984,13 @@
     }
 
     // ============ REALTIME LISTENER ============
+    let previousActiveCallIds = new Set();
     function initializeRealtimeListener() {
         database.ref('panggilan').on('value', (snapshot) => {
             activeCallsData = {};
             historyData = {};
             activeCallsCount = 0;
+            const currentActiveCallIds = new Set();
 
             snapshot.forEach((childSnapshot) => {
                 const key = childSnapshot.key;
@@ -976,10 +998,19 @@
                 if (data.status === 'active') {
                     activeCallsData[key] = data;
                     activeCallsCount++;
+                    currentActiveCallIds.add(key);
+
+                    // *** Deteksi panggilan BARU masuk (tidak ada di snapshot sebelumnya) ***
+                    if (!previousActiveCallIds.has(key) && data.posName) {
+                        // Tampilkan notifikasi browser (untuk kasus tab di-minimize)
+                        showCallNotification(data.posName, key);
+                    }
                 } else if (data.status === 'completed' || data.status === 'cancelled') {
                     historyData[key] = data;
                 }
             });
+
+            previousActiveCallIds = currentActiveCallIds;
 
             renderCalls();
             renderHistory();
@@ -987,6 +1018,17 @@
             handleAlarmLifecycle();
             updatePipActiveCount();
             updateFloatingBadge();
+        });
+
+        // Auto-reconnect: jika koneksi putus, coba re-init listener
+        database.ref('.info/connected').on('value', (snap) => {
+            if (snap.val() === false) {
+                console.log('⚠️ Koneksi Firebase terputus, mencoba reconnect...');
+                statusBadge.className = 'offline';
+                statusBadge.innerText = 'Reconnecting...';
+            } else if (snap.val() === true) {
+                console.log('✅ Koneksi Firebase aktif');
+            }
         });
     }
 
@@ -1010,6 +1052,59 @@
                 statusBadge.innerText = 'Semua Offline';
             }
         });
+    }
+
+    // ============ WAKE LOCK (layar tetap menyala) ============
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('✅ Wake Lock aktif - layar tetap menyala');
+                wakeLock.addEventListener('release', () => {
+                    console.log('Wake Lock dilepas');
+                    wakeLock = null;
+                });
+            }
+        } catch (err) {
+            console.log('Wake Lock gagal:', err.message);
+        }
+    }
+
+    // ============ NOTIFICATION API (backup notifikasi panggilan) ============
+    function requestNotificationPermission() {
+        if (!('Notification' in window)) {
+            notificationPermission = 'unsupported';
+            return;
+        }
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then(perm => {
+                notificationPermission = perm;
+                if (perm === 'granted') {
+                    console.log('✅ Notifikasi browser diizinkan');
+                }
+            });
+        } else {
+            notificationPermission = Notification.permission;
+        }
+    }
+
+    function showCallNotification(posName, callId) {
+        if (notificationPermission !== 'granted') return;
+        try {
+            const notif = new Notification('🚨 Panggilan dari ' + posName, {
+                body: 'Kasir ' + posName + ' memanggil supervisor. Klik untuk membuka aplikasi.',
+                icon: 'https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png',
+                tag: 'call-' + callId,
+                requireInteraction: true, // tidak auto-close
+                silent: false
+            });
+            notif.onclick = () => {
+                window.focus();
+                notif.close();
+            };
+        } catch (e) {
+            console.log('Notifikasi gagal:', e.message);
+        }
     }
 
     function toggleManualStatus() {
@@ -1081,6 +1176,14 @@
             pip.document.body.appendChild(pipContainer);
             pipContainer.style.display = 'flex';
 
+            // *** CRITICAL: Cache references to PiP elements so we can update them later ***
+            pipElements.statusMini = pip.document.getElementById('pipStatusMini');
+            pipElements.toggleBtn = pip.document.getElementById('pipToggleBtn');
+            pipElements.toggleText = pip.document.getElementById('pipToggleText');
+            pipElements.activeCount = pip.document.getElementById('pipActiveCount');
+            pipElements.activeCard = pip.document.getElementById('pipActiveCard');
+            pipElements.muteBtn = pip.document.getElementById('pipMuteBtn');
+
             // Update content immediately
             updatePipStatus();
             updatePipActiveCount();
@@ -1091,6 +1194,15 @@
                 pipContainer.style.display = 'none';
                 document.body.appendChild(pipContainer);
                 pipWindow = null;
+                // Reset cached references
+                pipElements = {
+                    statusMini: null,
+                    toggleBtn: null,
+                    toggleText: null,
+                    activeCount: null,
+                    activeCard: null,
+                    muteBtn: null
+                };
             });
 
             showToast('✅ Mode mengambang aktif', 'success');
@@ -1101,35 +1213,36 @@
     }
 
     function updatePipStatus() {
-        const pipStatusMini = document.getElementById('pipStatusMini');
-        const pipToggleBtn = document.getElementById('pipToggleBtn');
-        const pipToggleText = document.getElementById('pipToggleText');
+        // Pakai cached reference kalau PiP terbuka, fallback ke main document
+        const pipStatusMini = pipElements.statusMini || document.getElementById('pipStatusMini');
+        const pipToggleBtn = pipElements.toggleBtn || document.getElementById('pipToggleBtn');
+        const pipToggleText = pipElements.toggleText || document.getElementById('pipToggleText');
         if (!pipStatusMini) return;
 
         if (isManualOnline) {
             pipStatusMini.className = 'pip-status-mini online';
             pipStatusMini.innerText = 'Online';
-            pipToggleBtn.className = 'pip-toggle-btn offline';
-            pipToggleText.innerText = 'Jadi Offline';
+            if (pipToggleBtn) pipToggleBtn.className = 'pip-toggle-btn offline';
+            if (pipToggleText) pipToggleText.innerText = 'Jadi Offline';
         } else {
             pipStatusMini.className = 'pip-status-mini offline';
             pipStatusMini.innerText = 'Offline';
-            pipToggleBtn.className = 'pip-toggle-btn online';
-            pipToggleText.innerText = 'Jadi Online';
+            if (pipToggleBtn) pipToggleBtn.className = 'pip-toggle-btn online';
+            if (pipToggleText) pipToggleText.innerText = 'Jadi Online';
         }
     }
 
     function updatePipActiveCount() {
-        const pipActiveCount = document.getElementById('pipActiveCount');
-        const pipActiveCard = document.getElementById('pipActiveCard');
-        const pipMuteBtn = document.getElementById('pipMuteBtn');
+        const pipActiveCount = pipElements.activeCount || document.getElementById('pipActiveCount');
+        const pipActiveCard = pipElements.activeCard || document.getElementById('pipActiveCard');
+        const pipMuteBtn = pipElements.muteBtn || document.getElementById('pipMuteBtn');
         if (!pipActiveCount) return;
         pipActiveCount.innerText = activeCallsCount;
         if (activeCallsCount > 0) {
-            pipActiveCard.classList.remove('idle');
+            if (pipActiveCard) pipActiveCard.classList.remove('idle');
             if (pipMuteBtn) pipMuteBtn.classList.add('visible');
         } else {
-            pipActiveCard.classList.add('idle');
+            if (pipActiveCard) pipActiveCard.classList.add('idle');
             if (pipMuteBtn) pipMuteBtn.classList.remove('visible');
         }
     }
