@@ -5,75 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Panggil Alarm - Supervisor</title>
 
-    <meta name="theme-color" content="#4f46e5">
-    <link rel="icon" type="image/png" href="https://pdftourl.net/images/1790938008786-593b08f1-6a66-4aae-b037-0fbfc3160abf.jpeg">
-    <link rel="apple-touch-icon" href="https://pdftourl.net/images/1790938008786-593b08f1-6a66-4aae-b037-0fbfc3160abf.jpeg">
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Panggil Alarm Supervisor","short_name":"SupervisorAlarm","start_url":".","display":"standalone","background_color":"%23f8fafc","theme_color":"%234f46e5","icons":[{"src":"https://pdftourl.net/images/1790938008786-593b08f1-6a66-4aae-b037-0fbfc3160abf.jpeg","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
+    <!-- PWA & Mobile Optimization -->
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" href="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png">
+    <link rel="shortcut icon" type="image/png" href="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png">
+    <link rel="apple-touch-icon" href="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png" type="image/png">
+    
+    <!-- Manifest inline: agar Android/iOS pakai ikon ini saat dibuat pintasan / diinstall -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Panggil Alarm Supervisor","short_name":"SupervisorAlarm","start_url":".","display":"standalone","background_color":"%23f4f7f6","theme_color":"%232c3e50","icons":[{"src":"https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png","purpose":"any maskable"}]}'>
 
+    <!-- Firebase SDK Compat -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         :root {
-            --primary: #4f46e5;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-light: #64748b;
-            --danger: #ef4444;
-            --success: #10b981;
-            --info: #0ea5e9;
+            --primary: #2c3e50;
+            --accent: #f1c40f;
+            --bg: #f4f7f6;
+            --text: #333;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --info: #3498db;
+            --card-bg: #fff;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); overflow-x: hidden; }
 
-        header { background: var(--card-bg); padding: 18px 32px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #e2e8f0; }
-        header h1 { font-size: 1.25rem; font-weight: 800; color: var(--text); }
-        #statusBadge { background: #dcfce7; color: #166534; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        header { background-color: var(--card-bg); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        header h1 { font-size: 1.3rem; color: var(--primary); }
+        .header-btns { display: flex; gap: 10px; align-items: center; }
+        #statusBadge { background: var(--success); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
 
-        .dashboard { padding: 32px; max-width: 1300px; margin: 0 auto; }
-        .section-title { font-size: 0.85rem; font-weight: 700; color: var(--text-light); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .dashboard { padding: 25px; max-width: 1200px; margin: 0 auto; display: block; }
 
-        #emptyState { text-align: center; padding: 80px 20px; background: var(--card-bg); border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; margin-top: 10px; }
-        #emptyState h3 { color: var(--success); margin-bottom: 8px; font-size: 1.5rem; font-weight: 800; }
-        #emptyState p { color: var(--text-light); font-size: 0.95rem; }
+        .section-title { font-size: 1rem; color: #7f8c8d; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; margin-top: 20px; }
 
-        #activeCallsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
+        /* No Calls State */
+        #emptyState { text-align: center; padding: 60px 20px; background: var(--card-bg); border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-top: 20px; }
+        #emptyState h3 { color: var(--success); margin-bottom: 10px; font-size: 1.5rem; }
+        #emptyState p { color: #7f8c8d; }
 
-        .call-card { background: var(--card-bg); border-radius: 20px; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; border-left: 6px solid var(--danger); animation: cardEntrance 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; }
-        @keyframes cardEntrance { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        /* Active Calls Grid */
+        #activeCallsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 20px; }
+
+        /* Call Card */
+        .call-card { background: var(--card-bg); border-radius: 15px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-left: 5px solid var(--danger); animation: slideIn 0.3s ease-out; position: relative; overflow: hidden; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
-        .call-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-        .pos-info h2 { font-size: 1.5rem; font-weight: 800; color: var(--text); }
-        .pos-info p { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-top: 2px; }
+        .call-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px; }
+        .pos-info h2 { font-size: 1.6rem; color: var(--primary); }
+        .pos-info p { font-size: 0.8rem; color: #7f8c8d; text-transform: uppercase; }
         
-        .time-ago { font-size: 0.8rem; color: var(--danger); font-weight: 700; background: #fef2f2; padding: 6px 12px; border-radius: 12px; border: 1px solid #fee2e2; }
+        .time-ago { font-size: 0.85rem; color: var(--danger); font-weight: bold; background: #fff1f0; padding: 5px 10px; border-radius: 10px; }
 
-        .note-area { margin-bottom: 20px; }
-        .quick-notes { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .btn-quick { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; color: var(--text); font-weight: 700; transition: all 0.2s; }
-        .btn-quick:hover { background: #e2e8f0; border-color: #94a3b8; }
+        /* Note Input Area inside Card */
+        .note-area { margin-bottom: 15px; }
+        .quick-notes { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+        .btn-quick { background: #edf2f7; border: 1px solid #cbd5e0; padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; color: #4a5568; font-weight: bold; }
+        .btn-quick:hover { background: #e2e8f0; }
         
-        .note-input { width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 0.9rem; background: #f8fafc; transition: all 0.2s; color: var(--text); }
-        .note-input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        .note-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.85rem; margin-bottom: 8px; }
 
-        .card-actions { display: flex; gap: 10px; }
-        .btn-action { flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 0.85rem; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: all 0.2s; color: white; letter-spacing: 0.5px; }
-        .btn-send-note { background-color: var(--info); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2); }
-        .btn-send-note:hover { background: #0284c7; }
-        .btn-complete { background-color: var(--success); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
-        .btn-complete:hover { background: #059669; }
+        .card-actions { display: flex; gap: 8px; }
+        .btn-action { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: background 0.2s; color: white; }
+        .btn-send-note { background-color: var(--info); }
+        .btn-complete { background-color: var(--success); }
 
-        #flashOverlay { position: fixed; inset: 0; background: rgba(239, 68, 68, 0.15); display: none; z-index: 1000; pointer-events: none; animation: screenFlash 0.8s infinite; }
-        @keyframes screenFlash { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        /* Alarm Overlay & Flash Screen */
+        #flashOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(231, 76, 60, 0.5); display: none; z-index: 1000; pointer-events: none; animation: screenFlash 0.5s infinite; }
+        @keyframes screenFlash { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
         body.alarm-active #flashOverlay { display: block; }
 
-        #alarmControl { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 16px 28px; border-radius: 40px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); z-index: 1100; display: none; align-items: center; gap: 24px; width: 90%; max-width: 420px; justify-content: space-between; border: 1px solid rgba(255,255,255,0.1); }
-        body.alarm-active #alarmControl { display: flex; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes slideUp { from { bottom: -100px; opacity: 0; } to { bottom: 24px; opacity: 1; } }
-        #alarmControl p { font-weight: 800; color: #f87171; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
-        .btn-mute { background-color: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; transition: background 0.2s; }
-        .btn-mute:hover { background: #dc2626; }
+        /* Floating Alarm Control */
+        #alarmControl { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 15px 25px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 1100; display: none; align-items: center; gap: 15px; width: 90%; max-width: 400px; justify-content: space-between; }
+        body.alarm-active #alarmControl { display: flex; animation: slideUp 0.3s ease-out; }
+        #alarmControl p { font-weight: bold; color: var(--danger); font-size: 0.9rem; }
+        .btn-mute { background-color: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -81,20 +89,22 @@
 <div id="flashOverlay"></div>
 
 <div id="alarmControl">
-    <p>🚨 ALARM AKTIF!</p>
+    <p>⚠️ ALARM AKTIF!</p>
     <button class="btn-mute" onclick="muteAlarm()">Matikan Suara</button>
 </div>
 
 <header>
     <h1>Dashboard Supervisor</h1>
-    <div id="statusBadge">Koneksi Aktif</div>
+    <div class="header-btns">
+        <div id="statusBadge">Koneksi Aktif</div>
+    </div>
 </header>
 
-<div class="dashboard">
-    <div class="section-title">Daftar Panggilan Masuk</div>
+<div class="dashboard" id="dashboardContent">
+    <div class="section-title">Panggilan Aktif</div>
     
     <div id="emptyState">
-        <h3>✨ Semua Aman</h3>
+        <h3>✅ Semua Aman</h3>
         <p>Tidak ada panggilan aktif saat ini.</p>
     </div>
 
@@ -119,17 +129,6 @@
 
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-
-    // --- FITUR PRESENCE (STATUS ONLINE/OFFLINE SUPERVISOR) ---
-    const myConnectionRef = database.ref('status_supervisor').push();
-    
-    // Ketika terhubung ke database, daftarkan onDisconnect untuk hapus otomatis saat tutup tab/offline
-    database.ref('.info/connected').on('value', (snap) => {
-        if (snap.val() === true) {
-            myConnectionRef.onDisconnect().remove();
-            myConnectionRef.set({ onlineAt: firebase.database.ServerValue.TIMESTAMP });
-        }
-    });
 
     const alarmAudio = document.getElementById('alarmAudio');
     let isMuted = false;
@@ -158,6 +157,7 @@
             snapshot.forEach((childSnapshot) => {
                 const key = childSnapshot.key;
                 const data = childSnapshot.val();
+
                 if (data.status === 'active') {
                     activeCallsData[key] = data;
                     activeCallsCount++;
@@ -172,6 +172,7 @@
     function sendNoteToKasir(callId) {
         const inputElem = document.getElementById(`note-input-${callId}`);
         const noteText = inputElem ? inputElem.value.trim() : "";
+        
         if (!noteText) {
             alert("Silakan ketik atau pilih pesan balasan terlebih dahulu.");
             return;
@@ -180,7 +181,9 @@
         database.ref(`panggilan/${callId}`).update({
             replyNote: noteText,
             repliedAt: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => alert("Pesan terkirim ke Kasir!"));
+        }).then(() => {
+            alert("Pesan berhasil dikirim ke Kasir!");
+        });
     }
 
     function completeCall(callId) {
@@ -191,7 +194,9 @@
             status: 'completed',
             completedAt: firebase.database.ServerValue.TIMESTAMP
         };
-        if (noteText) updateData.replyNote = noteText;
+        if (noteText) {
+            updateData.replyNote = noteText;
+        }
 
         database.ref(`panggilan/${callId}`).update(updateData);
         if (isMuted) isMuted = false; 
@@ -204,6 +209,7 @@
 
     function renderCalls() {
         callsGrid.innerHTML = '';
+
         if (activeCallsCount === 0) {
             emptyState.style.display = 'block';
             clearInterval(timeUpdateInterval);
@@ -211,7 +217,10 @@
         }
 
         emptyState.style.display = 'none';
-        const sortedKeys = Object.keys(activeCallsData).sort((a, b) => activeCallsData[b].timestamp - activeCallsData[a].timestamp);
+
+        const sortedKeys = Object.keys(activeCallsData).sort((a, b) => {
+            return activeCallsData[b].timestamp - activeCallsData[a].timestamp;
+        });
 
         sortedKeys.forEach(key => {
             const call = activeCallsData[key];
@@ -247,31 +256,36 @@
                     <button class="btn-quick" onclick="setQuickNote('${id}', 'Saya segera ke sana')">🏃 Segera ke sana</button>
                     <button class="btn-quick" onclick="setQuickNote('${id}', 'Tunggu sebentar 2 menit')">⏱️ Tunggu 2 mnt</button>
                 </div>
-                <input type="text" class="note-input" id="note-input-${id}" placeholder="Ketik balasan pesan..." value="${existingNote}">
+                <input type="text" class="note-input" id="note-input-${id}" placeholder="Ketik balasan pesan ke kasir..." value="${existingNote}">
             </div>
 
             <div class="card-actions">
-                <button class="btn-action btn-send-note" onclick="sendNoteToKasir('${id}')">Kirim</button>
+                <button class="btn-action btn-send-note" onclick="sendNoteToKasir('${id}')">Kirim Pesan</button>
                 <button class="btn-action btn-complete" onclick="completeCall('${id}')">Selesai</button>
             </div>
         `;
+
         return card;
     }
 
     function updateAllTimeAgos() {
         document.querySelectorAll('.time-ago').forEach(elem => {
             const timestamp = parseInt(elem.getAttribute('data-time'));
-            if (timestamp) elem.innerText = getTimeAgoText(timestamp);
+            if (timestamp) {
+                elem.innerText = getTimeAgoText(timestamp);
+            }
         });
     }
 
     function getTimeAgoText(timestamp) {
         const now = Date.now();
         const seconds = Math.floor((now - timestamp) / 1000);
+        
         if (seconds < 5) return 'Baru saja';
-        if (seconds < 60) return `${seconds} dtk lalu`;
+        if (seconds < 60) return `${seconds} detik yang lalu`;
+        
         const minutes = Math.floor(seconds / 60);
-        return `${minutes} mnt ${seconds % 60} dtk lalu`;
+        return `${minutes} menit ${seconds % 60} detik yang lalu`;
     }
 
     function handleAlarmLifecycle() {
@@ -287,12 +301,12 @@
     }
 
     function playAlarmAudio() {
-        alarmAudio.play().catch(() => {
+        alarmAudio.play().catch(error => {
             if (!document.getElementById('audioUnlocker')) {
                 const unlocker = document.createElement('div');
                 unlocker.id = 'audioUnlocker';
-                unlocker.style = "position:fixed; inset:0; background:rgba(0,0,0,0.85); color:white; display:flex; justify-content:center; align-items:center; z-index:9999; cursor:pointer; font-family:sans-serif; text-align:center; padding:20px;";
-                unlocker.innerHTML = "<h1>🔊 Klik di mana saja untuk mengaktifkan Suara Alarm</h1>";
+                unlocker.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; display:flex; justify-content:center; align-items:center; z-index:9999; cursor:pointer;";
+                unlocker.innerHTML = "<h1>Klik di mana saja untuk mengaktifkan Suara Alarm</h1>";
                 unlocker.onclick = function() {
                     isMuted = false;
                     playAlarmAudio();
