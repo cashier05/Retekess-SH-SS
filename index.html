@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Panggil Alarm - Supervisor</title>
+    <title>Alarm - Supervisor</title>
 
     <meta name="theme-color" content="#4f46e5">
     <link rel="icon" type="image/png" href="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png">
@@ -211,86 +211,6 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
         .btn-floating-pip .pip-badge:empty { display: none; }
-
-        /* ============ PWA INSTALL BANNER (HP) ============ */
-        .pwa-install-banner {
-            position: fixed;
-            bottom: -200px;
-            left: 12px;
-            right: 12px;
-            max-width: 420px;
-            margin: 0 auto;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            color: white;
-            padding: 16px 18px;
-            border-radius: 18px;
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
-            z-index: 1200;
-            transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-        .pwa-install-banner.visible { bottom: 16px; }
-        .pwa-install-banner .pwa-icon {
-            width: 44px; height: 44px;
-            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem;
-            flex-shrink: 0;
-        }
-        .pwa-install-banner .pwa-text { flex: 1; min-width: 0; }
-        .pwa-install-banner .pwa-title { font-size: 0.88rem; font-weight: 800; }
-        .pwa-install-banner .pwa-sub { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; line-height: 1.4; }
-        .pwa-install-banner .pwa-btn-install {
-            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
-            color: white;
-            border: none;
-            padding: 9px 16px;
-            border-radius: 11px;
-            font-size: 0.78rem;
-            font-weight: 800;
-            cursor: pointer;
-            flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(79,70,229,0.4);
-        }
-        .pwa-install-banner .pwa-btn-close {
-            background: transparent;
-            border: none;
-            color: #64748b;
-            cursor: pointer;
-            font-size: 1.1rem;
-            padding: 4px 8px;
-            flex-shrink: 0;
-        }
-        .pwa-install-banner .pwa-btn-close:hover { color: white; }
-
-        /* ============ FULLSCREEN BUTTON (HP) ============ */
-        .btn-fullscreen {
-            position: fixed;
-            top: 70px;
-            right: 12px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            border: none;
-            width: 44px; height: 44px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.05rem;
-            box-shadow: 0 8px 20px rgba(16,185,129,0.4);
-            z-index: 1080;
-            transition: all 0.2s;
-        }
-        .btn-fullscreen:hover { transform: scale(1.08); }
-        .btn-fullscreen:active { transform: scale(0.96); }
-        /* Show fullscreen button only on mobile + when no overlay active */
-        @media (max-width: 768px) {
-            .btn-fullscreen.visible { display: flex; }
-        }
 
         /* ============ PIP MINI WINDOW CONTENT ============ */
         #pipContainer {
@@ -1446,22 +1366,6 @@
     <span class="pip-badge" id="floatingPipBadge"></span>
 </button>
 
-<!-- Fullscreen button (HP only) -->
-<button class="btn-fullscreen" id="btnFullscreen" onclick="toggleFullscreen()" title="Mode Layar Penuh">
-    <i class="fa-solid fa-expand" id="fullscreenIcon"></i>
-</button>
-
-<!-- PWA Install banner (HP only) -->
-<div class="pwa-install-banner" id="pwaInstallBanner">
-    <div class="pwa-icon"><i class="fa-solid fa-mobile-screen"></i></div>
-    <div class="pwa-text">
-        <div class="pwa-title">Pasang Aplikasi ke HP</div>
-        <div class="pwa-sub">Supervisor tetap aktif walau HP standby. Akses cepat dari layar utama.</div>
-    </div>
-    <button class="pwa-btn-install" onclick="installPWA()">Pasang</button>
-    <button class="pwa-btn-close" onclick="dismissPWAInstall()" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-</div>
-
 <!-- Backdrop untuk mobile overlay -->
 <div id="mobileOverlayBackdrop" onclick="closeFloatingOverlay()"></div>
 
@@ -1651,9 +1555,6 @@
         checkPipSupport();
         requestWakeLock(); // layar tetap menyala
         requestNotificationPermission(); // minta izin notifikasi browser
-        initPWAInstallPrompt(); // PWA install handler
-        initFullscreenButton(); // Tampilkan tombol fullscreen di HP
-        initPeriodicCheck(); // Cek berkala untuk memastikan status online tetap
 
         // Tampilkan modal input nama jika belum diset
         if (!getSupervisorName()) {
@@ -1664,10 +1565,6 @@
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && wakeLock === null) {
                 requestWakeLock();
-            }
-            // Kalau kembali ke app & ada panggilan aktif, bunyikan alarm lagi
-            if (document.visibilityState === 'visible' && activeCallsCount > 0 && !isMuted) {
-                playAlarmAudio();
             }
         });
 
@@ -1837,106 +1734,6 @@
         } catch (e) {
             console.log('Notifikasi gagal:', e.message);
         }
-    }
-
-    // ============ PWA INSTALL PROMPT (HP) ============
-    let deferredInstallPrompt = null;
-    function initPWAInstallPrompt() {
-        // Tangkap event beforeinstallprompt
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredInstallPrompt = e;
-            // Hanya tampilkan banner kalau user belum install PWA & device mobile
-            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            if (isMobile && !isStandalone && !localStorage.getItem('pwaInstallDismissed')) {
-                setTimeout(() => {
-                    document.getElementById('pwaInstallBanner').classList.add('visible');
-                }, 5000); // tampil 5 detik setelah load
-            }
-        });
-        // Deteksi jika sudah terinstall sebagai PWA
-        window.addEventListener('appinstalled', () => {
-            document.getElementById('pwaInstallBanner').classList.remove('visible');
-            showToast('✅ Aplikasi terpasang di HP Anda', 'success');
-        });
-    }
-
-    function installPWA() {
-        if (!deferredInstallPrompt) {
-            showToast('⚠️ Browser tidak mendukung PWA install. Gunakan menu browser → "Tambahkan ke Layar Utama"', 'info');
-            return;
-        }
-        deferredInstallPrompt.prompt();
-        deferredInstallPrompt.userChoice.then(() => {
-            deferredInstallPrompt = null;
-            document.getElementById('pwaInstallBanner').classList.remove('visible');
-        });
-    }
-
-    function dismissPWAInstall() {
-        document.getElementById('pwaInstallBanner').classList.remove('visible');
-        localStorage.setItem('pwaInstallDismissed', '1');
-    }
-
-    // ============ FULLSCREEN MODE (HP) ============
-    function initFullscreenButton() {
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isMobile) {
-            const btn = document.getElementById('btnFullscreen');
-            // Tampil setelah 3 detik (biar tidak nutup konten awal)
-            setTimeout(() => btn.classList.add('visible'), 3000);
-        }
-        // Update icon saat fullscreen change
-        document.addEventListener('fullscreenchange', updateFullscreenIcon);
-        document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
-    }
-
-    function toggleFullscreen() {
-        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-        if (!isFs) {
-            const el = document.documentElement;
-            const req = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen;
-            if (req) {
-                req.call(el).then(() => {
-                    showToast('✅ Mode layar penuh aktif', 'success');
-                }).catch(() => {
-                    showToast('⚠️ Tidak bisa masuk mode layar penuh', 'warning');
-                });
-            } else {
-                showToast('⚠️ Browser tidak mendukung fullscreen', 'warning');
-            }
-        } else {
-            const exit = document.exitFullscreen || document.webkitExitFullscreen;
-            if (exit) exit.call(document);
-        }
-    }
-
-    function updateFullscreenIcon() {
-        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-        const icon = document.getElementById('fullscreenIcon');
-        if (icon) {
-            icon.className = isFs ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
-        }
-    }
-
-    // ============ PERIODIC CHECK (pastikan status online tetap) ============
-    function initPeriodicCheck() {
-        // Setiap 30 detik, refresh status online (heartbeat)
-        setInterval(() => {
-            if (isManualOnline && navigator.onLine) {
-                // Update timestamp supaya tetap terlihat aktif
-                myStatusRef.update({
-                    lastSeen: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
-            // Kalau app baru dibuka dari minimize & ada panggilan aktif, alarm bunyi lagi
-            if (document.visibilityState === 'visible' && activeCallsCount > 0 && !isMuted) {
-                if (alarmAudio.paused) {
-                    playAlarmAudio();
-                }
-            }
-        }, 30000);
     }
 
     function toggleManualStatus() {
