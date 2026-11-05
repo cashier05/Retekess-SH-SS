@@ -152,7 +152,7 @@
             border: 3px solid #fff;
             cursor: pointer;
             box-shadow: 0 10px 25px rgba(79,70,229,0.4);
-            z-index: 1050;
+            z-index: 1150;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -164,6 +164,10 @@
         .btn-floating-pip:hover { transform: scale(1.08); box-shadow: 0 14px 30px rgba(79,70,229,0.5); }
         .btn-floating-pip:active { transform: scale(0.96); }
         .btn-floating-pip.hidden { display: none; }
+        /* Hide floating button when overlay is active */
+        body:has(#pipContainer.in-overlay) .btn-floating-pip { display: none; }
+        /* Fallback for browsers without :has() */
+        body.pip-overlay-active .btn-floating-pip { display: none; }
         .btn-floating-pip img.pip-favicon {
             width: 36px;
             height: 36px;
@@ -205,7 +209,24 @@
             box-sizing: border-box;
         }
         #pipContainer * { box-sizing: border-box; }
-        .pip-header { display: flex; justify-content: space-between; align-items: center; }
+        .pip-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .pip-header-right { display: flex; align-items: center; gap: 8px; }
+        .pip-close-btn {
+            background: rgba(239,68,68,0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239,68,68,0.35);
+            width: 28px; height: 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem;
+            transition: all 0.15s;
+        }
+        .pip-close-btn:hover { background: rgba(239,68,68,0.3); color: #fff; }
+        /* PiP window: hide close button (PiP has its own) */
+        #pipContainer.in-pip .pip-close-btn { display: none; }
+        /* Mobile overlay: show close button */
+        #pipContainer.in-overlay { display: flex !important; }
         .pip-title { font-size: 0.85rem; font-weight: 800; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
         .pip-title .pip-logo {
             width: 30px; height: 30px;
@@ -286,38 +307,171 @@
         .pip-mute-btn.unmuted { background: rgba(14,165,233,0.15); border-color: rgba(14,165,233,0.4); color: #7dd3fc; }
         .pip-mute-btn.unmuted:hover { background: rgba(14,165,233,0.25); border-color: rgba(14,165,233,0.6); }
 
-        /* Daftar pos yang sedang memanggil di mini-window */
-        .pip-active-list {
-            margin-top: 10px;
+        /* Layout card aktif: row horizontal */
+        .pip-active-row { display: flex; align-items: baseline; justify-content: center; gap: 10px; }
+
+        /* Daftar panggilan dengan chat */
+        .pip-calls-list {
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            text-align: left;
+            gap: 10px;
+            overflow-y: auto;
+            max-height: 280px;
+            padding-right: 2px;
+            margin: 0 -2px;
         }
-        .pip-active-list:empty { display: none; }
-        .pip-pos-item {
-            background: rgba(239,68,68,0.18);
-            border: 1px solid rgba(239,68,68,0.45);
-            color: #fecaca;
-            padding: 7px 11px;
-            border-radius: 8px;
-            font-size: 0.78rem;
-            font-weight: 700;
+        .pip-calls-list:empty { display: none; }
+        .pip-calls-list::-webkit-scrollbar { width: 5px; }
+        .pip-calls-list::-webkit-scrollbar-track { background: transparent; }
+        .pip-calls-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+        .pip-call-item {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.4);
+            border-radius: 12px;
+            padding: 10px 12px;
+            animation: cardEntrance 0.3s ease;
+        }
+        .pip-call-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 7px;
-            animation: pip-pulse 1.5s infinite;
+            gap: 8px;
+            margin-bottom: 8px;
         }
-        .pip-pos-item .pip-pos-dot {
-            width: 7px; height: 7px;
+        .pip-call-name-wrap { display: flex; align-items: center; gap: 7px; min-width: 0; }
+        .pip-call-dot {
+            width: 8px; height: 8px;
             border-radius: 50%;
             background: #fca5a5;
+            animation: pip-pulse 1s infinite;
             flex-shrink: 0;
         }
-        .pip-pos-item .pip-pos-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .pip-pos-item .pip-pos-time { font-size: 0.68rem; color: #fda4af; font-weight: 600; flex-shrink: 0; }
+        .pip-call-name {
+            font-size: 0.92rem;
+            font-weight: 800;
+            color: #fecaca;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .pip-call-time {
+            font-size: 0.68rem;
+            color: #fda4af;
+            font-weight: 700;
+            background: rgba(239,68,68,0.2);
+            padding: 2px 7px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        .pip-quick-replies {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 7px;
+            flex-wrap: wrap;
+        }
+        .pip-quick-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #e2e8f0;
+            padding: 5px 9px;
+            border-radius: 7px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            flex: 1;
+            min-width: 0;
+        }
+        .pip-quick-btn:hover { background: rgba(14,165,233,0.2); border-color: rgba(14,165,233,0.5); color: #7dd3fc; }
+        .pip-quick-btn:active { transform: scale(0.95); }
+
+        .pip-note-input-wrap {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .pip-note-input {
+            flex: 1;
+            min-width: 0;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: white;
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-family: inherit;
+            transition: border 0.15s;
+        }
+        .pip-note-input:focus { outline: none; border-color: rgba(14,165,233,0.6); }
+        .pip-note-input::placeholder { color: #64748b; }
+
+        .pip-icon-btn {
+            background: rgba(14,165,233,0.15);
+            border: 1px solid rgba(14,165,233,0.4);
+            color: #7dd3fc;
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .pip-icon-btn:hover { background: rgba(14,165,233,0.3); }
+        .pip-icon-btn:active { transform: scale(0.92); }
+        .pip-icon-btn.complete {
+            background: rgba(16,185,129,0.15);
+            border-color: rgba(16,185,129,0.4);
+            color: #6ee7b7;
+        }
+        .pip-icon-btn.complete:hover { background: rgba(16,185,129,0.3); }
+
+        .pip-empty-state {
+            text-align: center;
+            padding: 24px 12px;
+            color: #64748b;
+        }
+        .pip-empty-state:empty, .pip-empty-state.hidden { display: none; }
+        .pip-empty-state i { font-size: 1.5rem; margin-bottom: 8px; display: block; opacity: 0.5; }
+        .pip-empty-state p { font-size: 0.78rem; font-weight: 600; }
 
         .pip-footer { margin-top: auto; text-align: center; font-size: 0.65rem; color: #64748b; font-weight: 500; }
+
+        /* ============ MOBILE FLOATING OVERLAY (fallback PiP) ============ */
+        #mobileOverlayBackdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 1080;
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        #mobileOverlayBackdrop.visible { display: block; }
+
+        /* When #pipContainer is used as mobile overlay */
+        #pipContainer.in-overlay {
+            position: fixed;
+            bottom: 90px;
+            right: 16px;
+            left: 16px;
+            max-width: 380px;
+            margin-left: auto;
+            max-height: 78vh;
+            z-index: 1090;
+            border-radius: 18px;
+            box-shadow: 0 20px 50px -10px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+            animation: slideUpOverlay 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+        @keyframes slideUpOverlay {
+            from { opacity: 0; transform: translateY(20px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        #pipContainer.in-overlay .pip-calls-list { max-height: 240px; }
 
         /* ============ DASHBOARD ============ */
         .dashboard { padding: 28px 24px 120px; max-width: 1320px; margin: 0 auto; }
@@ -746,20 +900,35 @@
     </div>
 </header>
 
-<!-- Hidden PiP content -->
+<!-- Hidden PiP content (juga dipakai untuk mobile overlay) -->
 <div id="pipContainer" style="display:none;">
     <div class="pip-header">
         <div class="pip-title">
             <div class="pip-logo"><img src="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png" alt="Panggil Alarm" referrerpolicy="no-referrer"></div>
             <span>Supervisor</span>
         </div>
-        <div class="pip-status-mini offline" id="pipStatusMini">Offline</div>
+        <div class="pip-header-right">
+            <div class="pip-status-mini offline" id="pipStatusMini">Offline</div>
+            <button class="pip-close-btn" id="pipCloseBtn" data-action="close-overlay" title="Tutup" aria-label="Tutup">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
     </div>
 
     <div class="pip-active-card idle" id="pipActiveCard">
-        <div class="pip-active-count" id="pipActiveCount">0</div>
-        <div class="pip-active-label">Panggilan Aktif</div>
-        <div class="pip-active-list" id="pipActiveList"></div>
+        <div class="pip-active-row">
+            <div class="pip-active-count" id="pipActiveCount">0</div>
+            <div class="pip-active-label">Panggilan Aktif</div>
+        </div>
+    </div>
+
+    <!-- Daftar panggilan dengan chat -->
+    <div class="pip-calls-list" id="pipCallsList" data-container="calls-list">
+        <!-- Akan diisi dinamis -->
+    </div>
+    <div class="pip-empty-state" id="pipEmptyState">
+        <i class="fa-solid fa-bell-slash"></i>
+        <p>Tidak ada panggilan aktif</p>
     </div>
 
     <button class="pip-toggle-btn offline" id="pipToggleBtn" data-action="toggle-status">
@@ -772,13 +941,16 @@
         <span id="pipMuteText">Matikan Suara</span>
     </button>
 
-    <div class="pip-footer" id="pipFooter">Panggil Alarm Supervisor</div>
+    <div class="pip-footer">Panggil Alarm Supervisor</div>
 </div>
 
-<button class="btn-floating-pip" id="floatingPipBtn" onclick="openPipWindow()" title="Buka mode mengambang (always-on-top)" aria-label="Buka mode mengambang">
+<button class="btn-floating-pip" id="floatingPipBtn" onclick="openFloatingMode()" title="Buka mode mengambang" aria-label="Buka mode mengambang">
     <img src="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png" alt="Panggil Alarm" class="pip-favicon" referrerpolicy="no-referrer">
     <span class="pip-badge" id="floatingPipBadge"></span>
 </button>
+
+<!-- Backdrop untuk mobile overlay -->
+<div id="mobileOverlayBackdrop" onclick="closeFloatingOverlay()"></div>
 
 <div class="dashboard">
 
@@ -922,6 +1094,7 @@
 
     let isManualOnline = false;
     let pipWindow = null;
+    let pipMobileActive = false;
     // Reference ke elemen PiP (di-update saat PiP dibuka)
     let pipElements = {
         statusMini: null,
@@ -1176,24 +1349,59 @@
 
     // ============ FLOATING PIP WINDOW ============
     function checkPipSupport() {
-        if (!('documentPictureInPicture' in window)) {
-            floatingPipBtn.style.display = 'none';
+        // Tombol floating selalu tampil. Di mobile, fallback ke overlay.
+    }
+
+    // ============ FLOATING MODE (PiP desktop / Overlay mobile) ============
+    function openFloatingMode() {
+        if ('documentPictureInPicture' in window) {
+            openPipWindow();
+        } else {
+            openMobileOverlay();
         }
     }
 
+    function openMobileOverlay() {
+        if (pipMobileActive) return;
+        const pipContainer = document.getElementById('pipContainer');
+        const backdrop = document.getElementById('mobileOverlayBackdrop');
+        // Tambah class in-overlay untuk styling
+        pipContainer.classList.add('in-overlay');
+        pipContainer.classList.remove('in-pip');
+        backdrop.classList.add('visible');
+        document.body.classList.add('pip-overlay-active');
+        pipMobileActive = true;
+        // Cache references ke elemen yang aktif
+        cachePipElements(document);
+        // Tambah event listeners
+        bindPipEventListeners();
+        // Update konten
+        updatePipStatus();
+        updatePipActiveCount();
+        updatePipMuteUI();
+    }
+
+    function closeFloatingOverlay() {
+        if (!pipMobileActive) return;
+        const pipContainer = document.getElementById('pipContainer');
+        const backdrop = document.getElementById('mobileOverlayBackdrop');
+        pipContainer.classList.remove('in-overlay');
+        backdrop.classList.remove('visible');
+        document.body.classList.remove('pip-overlay-active');
+        pipMobileActive = false;
+        // Reset cached references
+        resetPipElements();
+    }
+
     async function openPipWindow() {
-        if (!('documentPictureInPicture' in window)) {
-            showToast('⚠️ Browser tidak mendukung mode mengambang. Gunakan Chrome/Edge terbaru.', 'warning');
-            return;
-        }
         if (pipWindow) {
             pipWindow.focus();
             return;
         }
         try {
             const pip = await documentPictureInPicture.requestWindow({
-                width: 320,
-                height: 420
+                width: 340,
+                height: 520
             });
             pipWindow = pip;
 
@@ -1208,23 +1416,15 @@
             pip.document.body.style.margin = '0';
             pip.document.body.style.background = '#0f172a';
             pip.document.body.appendChild(pipContainer);
+            pipContainer.classList.add('in-pip');
+            pipContainer.classList.remove('in-overlay');
             pipContainer.style.display = 'flex';
 
-            // *** CRITICAL: Cache references to PiP elements so we can update them later ***
-            pipElements.statusMini = pip.document.getElementById('pipStatusMini');
-            pipElements.toggleBtn = pip.document.getElementById('pipToggleBtn');
-            pipElements.toggleText = pip.document.getElementById('pipToggleText');
-            pipElements.activeCount = pip.document.getElementById('pipActiveCount');
-            pipElements.activeCard = pip.document.getElementById('pipActiveCard');
-            pipElements.activeList = pip.document.getElementById('pipActiveList');
-            pipElements.muteBtn = pip.document.getElementById('pipMuteBtn');
-            pipElements.muteIcon = pip.document.getElementById('pipMuteIcon');
-            pipElements.muteText = pip.document.getElementById('pipMuteText');
-
-            // *** CRITICAL: Event listeners must be added in PiP document's context ***
-            // Inline onclick handlers don't work across documents, so we add them here
-            pipElements.toggleBtn.addEventListener('click', toggleManualStatus);
-            pipElements.muteBtn.addEventListener('click', toggleMute);
+            // Cache references ke elemen di PiP document
+            cachePipElements(pip.document);
+            bindPipEventListeners();
+            // Bind listener di PiP document juga (event delegation tidak otomatis cross-doc)
+            bindPipWindowListeners(pip.document);
 
             // Update content immediately
             updatePipStatus();
@@ -1233,22 +1433,11 @@
 
             // Restore on close
             pip.addEventListener('pagehide', () => {
-                // Move container back to original document (hidden)
                 pipContainer.style.display = 'none';
+                pipContainer.classList.remove('in-pip');
                 document.body.appendChild(pipContainer);
                 pipWindow = null;
-                // Reset cached references
-                pipElements = {
-                    statusMini: null,
-                    toggleBtn: null,
-                    toggleText: null,
-                    activeCount: null,
-                    activeCard: null,
-                    activeList: null,
-                    muteBtn: null,
-                    muteIcon: null,
-                    muteText: null
-                };
+                resetPipElements();
             });
 
             showToast('✅ Mode mengambang aktif', 'success');
@@ -1258,8 +1447,95 @@
         }
     }
 
+    function cachePipElements(doc) {
+        pipElements.statusMini = doc.getElementById('pipStatusMini');
+        pipElements.toggleBtn = doc.getElementById('pipToggleBtn');
+        pipElements.toggleText = doc.getElementById('pipToggleText');
+        pipElements.activeCount = doc.getElementById('pipActiveCount');
+        pipElements.activeCard = doc.getElementById('pipActiveCard');
+        pipElements.callsList = doc.getElementById('pipCallsList');
+        pipElements.emptyState = doc.getElementById('pipEmptyState');
+        pipElements.muteBtn = doc.getElementById('pipMuteBtn');
+        pipElements.muteIcon = doc.getElementById('pipMuteIcon');
+        pipElements.muteText = doc.getElementById('pipMuteText');
+        pipElements.closeBtn = doc.getElementById('pipCloseBtn');
+    }
+
+    function resetPipElements() {
+        pipElements = {
+            statusMini: null,
+            toggleBtn: null,
+            toggleText: null,
+            activeCount: null,
+            activeCard: null,
+            callsList: null,
+            emptyState: null,
+            muteBtn: null,
+            muteIcon: null,
+            muteText: null,
+            closeBtn: null
+        };
+    }
+
+    // Event delegation: hanya perlu bind sekali per dokumen
+    // Saat PiP/overlay dibuka, kita bind ke container aktif
+    let pipListenersBound = false;
+    function bindPipEventListeners() {
+        if (pipListenersBound) return;
+        // Untuk main document (overlay mobile), pakai document listener
+        document.addEventListener('click', handlePipClick);
+        document.addEventListener('keydown', handlePipKeypress);
+        pipListenersBound = true;
+    }
+
+    // Untuk PiP window, attach listener manual saat PiP dibuat
+    function bindPipWindowListeners(pipDoc) {
+        if (!pipDoc) return;
+        pipDoc.addEventListener('click', handlePipClick);
+        pipDoc.addEventListener('keydown', handlePipKeypress);
+    }
+
+    function handlePipClick(e) {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        if (action === 'toggle-status') {
+            toggleManualStatus();
+        } else if (action === 'toggle-mute') {
+            toggleMute();
+        } else if (action === 'close-overlay') {
+            closeFloatingOverlay();
+        } else if (action === 'quick-reply') {
+            const callId = btn.dataset.callId;
+            const note = btn.dataset.note;
+            if (callId && note) sendNoteToKasir(callId, note);
+        } else if (action === 'send-note') {
+            const callId = btn.dataset.callId;
+            const input = pipElements.callsList?.querySelector(`#pip-note-input-${callId}`) || document.getElementById(`pip-note-input-${callId}`);
+            const note = input ? input.value.trim() : '';
+            if (!note) {
+                showToast('⚠️ Ketik pesan dulu', 'warning');
+                return;
+            }
+            sendNoteToKasir(callId, note);
+        } else if (action === 'complete-call') {
+            const callId = btn.dataset.callId;
+            if (callId) completeCall(callId);
+        }
+    }
+
+    // Tangani Enter key pada input chat PiP (event delegation)
+    function handlePipKeypress(e) {
+        if (e.key !== 'Enter') return;
+        const input = e.target.closest('.pip-note-input');
+        if (!input) return;
+        e.preventDefault();
+        const callId = input.id.replace('pip-note-input-', '');
+        const sendBtn = pipElements.callsList?.querySelector(`[data-action="send-note"][data-call-id="${callId}"]`) || document.querySelector(`[data-action="send-note"][data-call-id="${callId}"]`);
+        if (sendBtn) sendBtn.click();
+    }
+
     function updatePipStatus() {
-        // Pakai cached reference kalau PiP terbuka, fallback ke main document
         const pipStatusMini = pipElements.statusMini || document.getElementById('pipStatusMini');
         const pipToggleBtn = pipElements.toggleBtn || document.getElementById('pipToggleBtn');
         const pipToggleText = pipElements.toggleText || document.getElementById('pipToggleText');
@@ -1282,21 +1558,24 @@
         const pipActiveCount = pipElements.activeCount || document.getElementById('pipActiveCount');
         const pipActiveCard = pipElements.activeCard || document.getElementById('pipActiveCard');
         const pipMuteBtn = pipElements.muteBtn || document.getElementById('pipMuteBtn');
-        const pipActiveList = pipElements.activeList || document.getElementById('pipActiveList');
+        const pipCallsList = pipElements.callsList || document.getElementById('pipCallsList');
+        const pipEmptyState = pipElements.emptyState || document.getElementById('pipEmptyState');
         if (!pipActiveCount) return;
         pipActiveCount.innerText = activeCallsCount;
         if (activeCallsCount > 0) {
             if (pipActiveCard) pipActiveCard.classList.remove('idle');
             if (pipMuteBtn) pipMuteBtn.classList.add('visible');
+            if (pipEmptyState) pipEmptyState.classList.add('hidden');
         } else {
             if (pipActiveCard) pipActiveCard.classList.add('idle');
             if (pipMuteBtn) pipMuteBtn.classList.remove('visible');
+            if (pipEmptyState) pipEmptyState.classList.remove('hidden');
         }
-        // Render daftar nama pos yang sedang memanggil
-        renderPipActiveList(pipActiveList);
+        // Render daftar panggilan dengan chat + quick replies
+        renderPipCallsList(pipCallsList);
     }
 
-    function renderPipActiveList(container) {
+    function renderPipCallsList(container) {
         if (!container) return;
         const keys = Object.keys(activeCallsData).sort((a, b) => activeCallsData[b].timestamp - activeCallsData[a].timestamp);
         if (keys.length === 0) {
@@ -1306,10 +1585,28 @@
         container.innerHTML = keys.map(key => {
             const call = activeCallsData[key];
             const timeAgo = getTimeAgoShort(call.timestamp);
-            return `<div class="pip-pos-item">
-                <span class="pip-pos-dot"></span>
-                <span class="pip-pos-name">${escapeHtml(call.posName || 'Tidak diketahui')}</span>
-                <span class="pip-pos-time">${timeAgo}</span>
+            const existingNote = call.replyNote || '';
+            return `<div class="pip-call-item" id="pip-call-${key}">
+                <div class="pip-call-header">
+                    <div class="pip-call-name-wrap">
+                        <span class="pip-call-dot"></span>
+                        <span class="pip-call-name">${escapeHtml(call.posName || 'Tidak diketahui')}</span>
+                    </div>
+                    <span class="pip-call-time">${timeAgo}</span>
+                </div>
+                <div class="pip-quick-replies">
+                    <button class="pip-quick-btn" data-action="quick-reply" data-call-id="${key}" data-note="Saya segera ke sana">🏃 Segera</button>
+                    <button class="pip-quick-btn" data-action="quick-reply" data-call-id="${key}" data-note="Tunggu sebentar 2 menit">⏱️ 2 mnt</button>
+                </div>
+                <div class="pip-note-input-wrap">
+                    <input type="text" class="pip-note-input" id="pip-note-input-${key}" placeholder="Ketik balasan..." value="${escapeHtml(existingNote)}">
+                    <button class="pip-icon-btn" data-action="send-note" data-call-id="${key}" title="Kirim">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                    <button class="pip-icon-btn complete" data-action="complete-call" data-call-id="${key}" title="Selesai">
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                </div>
             </div>`;
         }).join('');
     }
@@ -1345,9 +1642,16 @@
     }
 
     // ============ ACTIVE CALLS ============
-    function sendNoteToKasir(callId) {
-        const inputElem = document.getElementById(`note-input-${callId}`);
-        const noteText = inputElem ? inputElem.value.trim() : "";
+    function sendNoteToKasir(callId, presetNote) {
+        let noteText;
+        if (presetNote) {
+            // Dari quick reply (preset)
+            noteText = presetNote;
+        } else {
+            // Dari input di main window
+            const inputElem = document.getElementById(`note-input-${callId}`);
+            noteText = inputElem ? inputElem.value.trim() : "";
+        }
         if (!noteText) {
             showToast("⚠️ Ketik atau pilih pesan balasan dulu", 'warning');
             return;
@@ -1355,12 +1659,25 @@
         database.ref(`panggilan/${callId}`).update({
             replyNote: noteText,
             repliedAt: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => showToast("✅ Pesan terkirim ke Kasir", 'success'));
+        }).then(() => {
+            showToast("✅ Pesan terkirim ke Kasir", 'success');
+            // Update tampilan input di PiP jika ada
+            const pipInput = pipElements.callsList?.querySelector(`#pip-note-input-${callId}`);
+            if (pipInput) pipInput.value = noteText;
+        });
     }
 
     function completeCall(callId) {
+        // Coba ambil note dari main window input dulu
+        let noteText = '';
         const inputElem = document.getElementById(`note-input-${callId}`);
-        const noteText = inputElem ? inputElem.value.trim() : "";
+        if (inputElem) {
+            noteText = inputElem.value.trim();
+        } else {
+            // Atau dari PiP/overlay input
+            const pipInput = pipElements.callsList?.querySelector(`#pip-note-input-${callId}`);
+            noteText = pipInput ? pipInput.value.trim() : '';
+        }
         const updateData = {
             status: 'completed',
             completedAt: firebase.database.ServerValue.TIMESTAMP
