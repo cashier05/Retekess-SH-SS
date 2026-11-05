@@ -139,6 +139,23 @@
         .status-toggle-btn.offline { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border-color: #dc2626; box-shadow: 0 4px 12px rgba(239,68,68,0.3); }
         .status-toggle-btn.offline:hover { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
 
+        .btn-edit-profile {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 36px; height: 36px;
+            border-radius: 11px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            transition: all 0.15s;
+            padding: 0;
+        }
+        .btn-edit-profile:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); transform: translateY(-1px); }
+        .btn-edit-profile:active { transform: translateY(0); }
+
         /* ============ FLOATING PIP BUTTON ============ */
         .btn-floating-pip {
             position: fixed;
@@ -967,6 +984,110 @@
         .modal-card .btn-modal:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(79,70,229,0.4); }
         .modal-card .btn-modal:active { transform: translateY(0); }
 
+        /* ============ PHOTO UPLOAD ============ */
+        .photo-upload-section { margin-bottom: 18px; }
+        .photo-preview-wrap {
+            position: relative;
+            width: 96px; height: 96px;
+            margin: 0 auto 12px;
+        }
+        .photo-preview {
+            width: 96px; height: 96px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2.2rem;
+            font-weight: 800;
+            box-shadow: 0 10px 25px rgba(79,70,229,0.3);
+            border: 3px solid white;
+            overflow: hidden;
+            position: relative;
+        }
+        .photo-preview img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        .photo-upload-btn {
+            position: absolute;
+            bottom: -2px; right: -2px;
+            background: white;
+            border: 2px solid var(--border);
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 0.85rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: all 0.15s;
+        }
+        .photo-upload-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .photo-upload-btn input[type="file"] { display: none; }
+        .photo-preset-label {
+            font-size: 0.72rem;
+            color: var(--text-light);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+        .photo-presets {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .photo-preset {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 800;
+            transition: all 0.15s;
+            background-size: cover;
+            background-position: center;
+        }
+        .photo-preset:hover { transform: scale(1.1); border-color: var(--primary); }
+        .photo-preset.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.2); }
+        .btn-remove-photo {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 4px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Update avatar di Who Online modal untuk support foto */
+        .who-online-item .avatar.has-photo {
+            background: transparent;
+            box-shadow: none;
+            border: 2px solid #10b981;
+        }
+        .who-online-item .avatar.has-photo::after { display: none; }
+        .who-online-item .avatar.has-photo img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        .who-online-item.unknown .avatar.has-photo { border-color: #f59e0b; }
+
         /* ============ MODAL: SIAPA ONLINE ============ */
         #whoOnlineList {
             text-align: left;
@@ -1116,7 +1237,30 @@
         <div class="modal-card">
             <div class="modal-icon"><i class="fa-solid fa-user-shield"></i></div>
             <h3>Selamat Datang, Supervisor!</h3>
-            <p>Masukkan nama Anda agar kasir tahu siapa yang sedang online. Nama ini akan tampil saat Anda aktif.</p>
+            <p>Masukkan nama dan foto profil Anda agar kasir tahu siapa yang sedang online.</p>
+            
+            <div class="photo-upload-section">
+                <div class="photo-preview-wrap">
+                    <div class="photo-preview" id="photoPreview">
+                        <i class="fa-solid fa-user" id="photoPreviewIcon"></i>
+                    </div>
+                    <label class="photo-upload-btn" title="Upload foto">
+                        <i class="fa-solid fa-camera"></i>
+                        <input type="file" id="photoFileInput" accept="image/*">
+                    </label>
+                </div>
+                <button class="btn-remove-photo" id="btnRemovePhoto" onclick="removePhoto()" style="display:none;">Hapus foto</button>
+                <div class="photo-preset-label">Atau pilih avatar:</div>
+                <div class="photo-presets" id="photoPresets">
+                    <button class="photo-preset" data-emoji="👨" style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);" onclick="selectPresetAvatar(this, '👨')">👨</button>
+                    <button class="photo-preset" data-emoji="👩" style="background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);" onclick="selectPresetAvatar(this, '👩')">👩</button>
+                    <button class="photo-preset" data-emoji="🧑" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);" onclick="selectPresetAvatar(this, '🧑')">🧑</button>
+                    <button class="photo-preset" data-emoji="👨‍💼" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);" onclick="selectPresetAvatar(this, '👨‍💼')">👨‍💼</button>
+                    <button class="photo-preset" data-emoji="👩‍💼" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" onclick="selectPresetAvatar(this, '👩‍💼')">👩‍💼</button>
+                    <button class="photo-preset" data-emoji="🧔" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);" onclick="selectPresetAvatar(this, '🧔')">🧔</button>
+                </div>
+            </div>
+            
             <input type="text" id="supervisorNameInput" placeholder="Contoh: Budi, Andi, dll" maxlength="30" autocomplete="off">
             <button class="btn-modal" onclick="saveSupervisorName()">Simpan & Lanjutkan</button>
         </div>
@@ -1163,6 +1307,9 @@
         <button id="statusToggleBtn" class="status-toggle-btn offline" onclick="toggleManualStatus()" title="Aktifkan/Nonaktifkan status Online">
             <i class="fa-solid fa-power-off"></i>
             <span id="statusToggleText">Aktifkan</span>
+        </button>
+        <button class="btn-edit-profile" onclick="showNameModal()" title="Edit profil (nama & foto)">
+            <i class="fa-solid fa-user-pen"></i>
         </button>
     </div>
 </header>
@@ -1603,26 +1750,42 @@
                 showToast('Silakan masukkan nama dulu', 'info');
                 return;
             }
-            // Set Online
-            myStatusRef.set({
+            // Set Online (dengan foto kalau ada)
+            const statusData = {
                 name: getSupervisorName(),
                 onlineAt: firebase.database.ServerValue.TIMESTAMP,
                 device: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop'
-            }).then(() => {
+            };
+            const photo = getSupervisorPhoto();
+            if (photo) statusData.photoURL = photo;
+            myStatusRef.set(statusData).then(() => {
                 showToast('🟢 Anda sekarang ONLINE', 'success');
             });
         }
     }
 
-    // ============ SUPERVISOR NAME MANAGEMENT ============
+    // ============ SUPERVISOR NAME & PHOTO MANAGEMENT ============
     function getSupervisorName() {
         return localStorage.getItem('supervisorName') || '';
     }
+
+    function getSupervisorPhoto() {
+        return localStorage.getItem('supervisorPhoto') || '';
+    }
+
+    let selectedPresetEmoji = null;
 
     function showNameModal() {
         document.getElementById('nameModal').classList.add('visible');
         const input = document.getElementById('supervisorNameInput');
         input.value = getSupervisorName();
+        // Load existing photo kalau ada
+        const existingPhoto = getSupervisorPhoto();
+        if (existingPhoto) {
+            updatePhotoPreview(existingPhoto);
+        } else {
+            resetPhotoPreview();
+        }
         setTimeout(() => input.focus(), 100);
     }
 
@@ -1633,12 +1796,105 @@
             return;
         }
         localStorage.setItem('supervisorName', name);
+        // Simpan foto juga kalau ada
+        const photo = getSupervisorPhoto();
         document.getElementById('nameModal').classList.remove('visible');
-        showToast('✅ Nama tersimpan: ' + name, 'success');
-        // Jika sedang online, update data di Firebase supaya nama langsung terlihat
+        showToast('✅ Profil tersimpan: ' + name, 'success');
+        // Jika sedang online, update data di Firebase supaya nama & foto langsung terlihat
         if (isManualOnline) {
-            myStatusRef.update({ name: name });
+            const updateData = { name: name };
+            if (photo) updateData.photoURL = photo;
+            myStatusRef.update(updateData);
         }
+    }
+
+    // ============ PHOTO UPLOAD & COMPRESSION ============
+    function handlePhotoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            showToast('⚠️ File harus berupa gambar', 'warning');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('⚠️ Ukuran file maksimal 5MB', 'warning');
+            return;
+        }
+        // Baca file, resize, compress ke base64
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                // Resize ke 128x128 max
+                const canvas = document.createElement('canvas');
+                const size = 128;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                // Crop ke square (center crop)
+                const minDim = Math.min(img.width, img.height);
+                const sx = (img.width - minDim) / 2;
+                const sy = (img.height - minDim) / 2;
+                ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+                // Compress ke JPEG quality 0.7 (~10-15KB)
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                localStorage.setItem('supervisorPhoto', dataUrl);
+                updatePhotoPreview(dataUrl);
+                selectedPresetEmoji = null;
+                document.querySelectorAll('.photo-preset').forEach(b => b.classList.remove('selected'));
+                showToast('📷 Foto profil diperbarui', 'success');
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function selectPresetAvatar(btn, emoji) {
+        document.querySelectorAll('.photo-preset').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedPresetEmoji = emoji;
+        // Render preset sebagai base64 SVG dengan emoji
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><text x="64" y="64" font-size="80" text-anchor="middle" dominant-baseline="central">${emoji}</text></svg>`;
+        const dataUrl = 'data:image/svg+xml;base64,' + btoa(svg);
+        localStorage.setItem('supervisorPhoto', dataUrl);
+        updatePhotoPreview(dataUrl);
+    }
+
+    function removePhoto() {
+        localStorage.removeItem('supervisorPhoto');
+        selectedPresetEmoji = null;
+        document.querySelectorAll('.photo-preset').forEach(b => b.classList.remove('selected'));
+        resetPhotoPreview();
+        document.getElementById('photoFileInput').value = '';
+        showToast('Foto dihapus', 'info');
+    }
+
+    function updatePhotoPreview(dataUrl) {
+        const preview = document.getElementById('photoPreview');
+        const icon = document.getElementById('photoPreviewIcon');
+        const removeBtn = document.getElementById('btnRemovePhoto');
+        // Hapus gambar lama
+        const oldImg = preview.querySelector('img');
+        if (oldImg) oldImg.remove();
+        // Sembunyikan icon
+        if (icon) icon.style.display = 'none';
+        // Tambah gambar baru
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        preview.appendChild(img);
+        if (removeBtn) removeBtn.style.display = 'block';
+    }
+
+    function resetPhotoPreview() {
+        const preview = document.getElementById('photoPreview');
+        const icon = document.getElementById('photoPreviewIcon');
+        const removeBtn = document.getElementById('btnRemovePhoto');
+        const oldImg = preview.querySelector('img');
+        if (oldImg) oldImg.remove();
+        if (icon) icon.style.display = 'block';
+        if (removeBtn) removeBtn.style.display = 'none';
+        document.querySelectorAll('.photo-preset').forEach(b => b.classList.remove('selected'));
+        document.getElementById('photoFileInput').value = '';
     }
 
     // Enter key untuk simpan nama
@@ -1648,6 +1904,10 @@
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') saveSupervisorName();
             });
+        }
+        const photoInput = document.getElementById('photoFileInput');
+        if (photoInput) {
+            photoInput.addEventListener('change', handlePhotoUpload);
         }
         // Click outside modal untuk tutup
         const nameModal = document.getElementById('nameModal');
@@ -1719,6 +1979,10 @@
                 const deviceIcon = item.device === 'mobile' ? '📱' : '💻';
                 const unknownClass = isUnknown ? ' unknown' : '';
                 const unknownBadge = isUnknown ? '<span class="unknown-badge">Tidak Dikenal</span>' : '';
+                // Avatar: pakai foto kalau ada, fallback ke initial
+                const avatarHtml = item.photoURL
+                    ? `<div class="avatar has-photo"><img src="${escapeHtml(item.photoURL)}" alt="${escapeHtml(name)}" referrerpolicy="no-referrer"></div>`
+                    : `<div class="avatar">${escapeHtml(initial)}</div>`;
                 // Tombol Putuskan hanya untuk supervisor lain (bukan diri sendiri)
                 const actionBtn = isMe
                     ? '<span class="you-tag">Anda</span>'
@@ -1726,7 +1990,7 @@
                         <i class="fa-solid fa-plug-circle-xmark"></i> Putuskan
                        </button>`;
                 return `<div class="who-online-item${unknownClass}">
-                    <div class="avatar">${escapeHtml(initial)}</div>
+                    ${avatarHtml}
                     <div class="info">
                         <div class="name">${escapeHtml(name)}${unknownBadge}</div>
                         <div class="meta">${deviceIcon} Online ${onlineTime}</div>
