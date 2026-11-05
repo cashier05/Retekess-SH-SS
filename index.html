@@ -283,6 +283,39 @@
         }
         .pip-mute-btn:hover { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); }
         .pip-mute-btn.visible { display: inline-flex; }
+        .pip-mute-btn.unmuted { background: rgba(14,165,233,0.15); border-color: rgba(14,165,233,0.4); color: #7dd3fc; }
+        .pip-mute-btn.unmuted:hover { background: rgba(14,165,233,0.25); border-color: rgba(14,165,233,0.6); }
+
+        /* Daftar pos yang sedang memanggil di mini-window */
+        .pip-active-list {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-align: left;
+        }
+        .pip-active-list:empty { display: none; }
+        .pip-pos-item {
+            background: rgba(239,68,68,0.18);
+            border: 1px solid rgba(239,68,68,0.45);
+            color: #fecaca;
+            padding: 7px 11px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            animation: pip-pulse 1.5s infinite;
+        }
+        .pip-pos-item .pip-pos-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #fca5a5;
+            flex-shrink: 0;
+        }
+        .pip-pos-item .pip-pos-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pip-pos-item .pip-pos-time { font-size: 0.68rem; color: #fda4af; font-weight: 600; flex-shrink: 0; }
 
         .pip-footer { margin-top: auto; text-align: center; font-size: 0.65rem; color: #64748b; font-weight: 500; }
 
@@ -686,7 +719,7 @@
 
 <div id="alarmControl">
     <p><span class="alarm-dot"></span> ALARM AKTIF!</p>
-    <button class="btn-mute" onclick="muteAlarm()">Matikan Suara</button>
+    <button class="btn-mute" onclick="toggleMute()">Matikan Suara</button>
 </div>
 
 <div id="toast"></div>
@@ -726,16 +759,17 @@
     <div class="pip-active-card idle" id="pipActiveCard">
         <div class="pip-active-count" id="pipActiveCount">0</div>
         <div class="pip-active-label">Panggilan Aktif</div>
+        <div class="pip-active-list" id="pipActiveList"></div>
     </div>
 
-    <button class="pip-toggle-btn offline" id="pipToggleBtn" onclick="toggleManualStatus()">
+    <button class="pip-toggle-btn offline" id="pipToggleBtn" data-action="toggle-status">
         <i class="fa-solid fa-power-off"></i>
         <span id="pipToggleText">Aktifkan Online</span>
     </button>
 
-    <button class="pip-mute-btn" id="pipMuteBtn" onclick="muteAlarm()">
-        <i class="fa-solid fa-volume-xmark"></i>
-        <span>Matikan Suara</span>
+    <button class="pip-mute-btn" id="pipMuteBtn" data-action="toggle-mute">
+        <i class="fa-solid fa-volume-xmark" id="pipMuteIcon"></i>
+        <span id="pipMuteText">Matikan Suara</span>
     </button>
 
     <div class="pip-footer" id="pipFooter">Panggil Alarm Supervisor</div>
@@ -1159,7 +1193,7 @@
         try {
             const pip = await documentPictureInPicture.requestWindow({
                 width: 320,
-                height: 360
+                height: 420
             });
             pipWindow = pip;
 
@@ -1182,11 +1216,20 @@
             pipElements.toggleText = pip.document.getElementById('pipToggleText');
             pipElements.activeCount = pip.document.getElementById('pipActiveCount');
             pipElements.activeCard = pip.document.getElementById('pipActiveCard');
+            pipElements.activeList = pip.document.getElementById('pipActiveList');
             pipElements.muteBtn = pip.document.getElementById('pipMuteBtn');
+            pipElements.muteIcon = pip.document.getElementById('pipMuteIcon');
+            pipElements.muteText = pip.document.getElementById('pipMuteText');
+
+            // *** CRITICAL: Event listeners must be added in PiP document's context ***
+            // Inline onclick handlers don't work across documents, so we add them here
+            pipElements.toggleBtn.addEventListener('click', toggleManualStatus);
+            pipElements.muteBtn.addEventListener('click', toggleMute);
 
             // Update content immediately
             updatePipStatus();
             updatePipActiveCount();
+            updatePipMuteUI();
 
             // Restore on close
             pip.addEventListener('pagehide', () => {
@@ -1201,7 +1244,10 @@
                     toggleText: null,
                     activeCount: null,
                     activeCard: null,
-                    muteBtn: null
+                    activeList: null,
+                    muteBtn: null,
+                    muteIcon: null,
+                    muteText: null
                 };
             });
 
@@ -1236,6 +1282,7 @@
         const pipActiveCount = pipElements.activeCount || document.getElementById('pipActiveCount');
         const pipActiveCard = pipElements.activeCard || document.getElementById('pipActiveCard');
         const pipMuteBtn = pipElements.muteBtn || document.getElementById('pipMuteBtn');
+        const pipActiveList = pipElements.activeList || document.getElementById('pipActiveList');
         if (!pipActiveCount) return;
         pipActiveCount.innerText = activeCallsCount;
         if (activeCallsCount > 0) {
@@ -1244,6 +1291,51 @@
         } else {
             if (pipActiveCard) pipActiveCard.classList.add('idle');
             if (pipMuteBtn) pipMuteBtn.classList.remove('visible');
+        }
+        // Render daftar nama pos yang sedang memanggil
+        renderPipActiveList(pipActiveList);
+    }
+
+    function renderPipActiveList(container) {
+        if (!container) return;
+        const keys = Object.keys(activeCallsData).sort((a, b) => activeCallsData[b].timestamp - activeCallsData[a].timestamp);
+        if (keys.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+        container.innerHTML = keys.map(key => {
+            const call = activeCallsData[key];
+            const timeAgo = getTimeAgoShort(call.timestamp);
+            return `<div class="pip-pos-item">
+                <span class="pip-pos-dot"></span>
+                <span class="pip-pos-name">${escapeHtml(call.posName || 'Tidak diketahui')}</span>
+                <span class="pip-pos-time">${timeAgo}</span>
+            </div>`;
+        }).join('');
+    }
+
+    function getTimeAgoShort(timestamp) {
+        if (!timestamp) return '';
+        const now = Date.now();
+        const seconds = Math.floor((now - timestamp) / 1000);
+        if (seconds < 60) return seconds + 'd';
+        const mins = Math.floor(seconds / 60);
+        return mins + 'm';
+    }
+
+    function updatePipMuteUI() {
+        const muteBtn = pipElements.muteBtn || document.getElementById('pipMuteBtn');
+        const muteIcon = pipElements.muteIcon || document.getElementById('pipMuteIcon');
+        const muteText = pipElements.muteText || document.getElementById('pipMuteText');
+        if (!muteBtn) return;
+        if (isMuted) {
+            muteBtn.classList.remove('unmuted');
+            if (muteIcon) muteIcon.className = 'fa-solid fa-volume-xmark';
+            if (muteText) muteText.innerText = 'Aktifkan Suara';
+        } else {
+            muteBtn.classList.add('unmuted');
+            if (muteIcon) muteIcon.className = 'fa-solid fa-volume-high';
+            if (muteText) muteText.innerText = 'Matikan Suara';
         }
     }
 
@@ -1514,8 +1606,13 @@
         } else {
             body.classList.remove('alarm-active');
             stopAlarmAudio();
-            isMuted = false;
+            // Auto-reset mute ketika tidak ada panggilan aktif
+            if (isMuted) {
+                isMuted = false;
+                updatePipMuteUI();
+            }
         }
+        updatePipMuteUI();
     }
 
     function playAlarmAudio() {
@@ -1545,11 +1642,25 @@
         alarmAudio.currentTime = 0;
     }
 
-    function muteAlarm() {
-        isMuted = true;
-        alarmAudio.pause();
-        showToast('🔇 Suara alarm dimatikan sementara', 'info');
+    function toggleMute() {
+        if (isMuted) {
+            // Aktifkan suara kembali
+            isMuted = false;
+            if (activeCallsCount > 0) {
+                playAlarmAudio();
+            }
+            showToast('🔊 Suara alarm diaktifkan', 'success');
+        } else {
+            // Matikan suara
+            isMuted = true;
+            alarmAudio.pause();
+            showToast('🔇 Suara alarm dimatikan sementara', 'info');
+        }
+        updatePipMuteUI();
     }
+
+    // Backward compat — fungsi lama tetap bisa dipanggil
+    function muteAlarm() { toggleMute(); }
 
     // ============ TOAST ============
     let toastTimer = null;
