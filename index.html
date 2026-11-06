@@ -670,6 +670,66 @@
         }
 
         .note-area { margin-bottom: 18px; }
+
+        /* Chat history di call-card supervisor */
+        .chat-history {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 14px;
+            max-height: 160px;
+            overflow-y: auto;
+            display: none;
+        }
+        .chat-history.visible { display: block; }
+        .chat-history-header {
+            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+            color: white;
+            padding: 7px 12px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            position: sticky;
+            top: 0;
+        }
+        .chat-history-messages {
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .chat-history-msg {
+            max-width: 80%;
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 0.78rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+            animation: cardEntrance 0.2s ease;
+        }
+        .chat-history-msg.from-kasir {
+            background: white;
+            color: var(--text);
+            align-self: flex-start;
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 3px;
+        }
+        .chat-history-msg.from-supervisor {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 3px;
+        }
+        .chat-history-msg .msg-meta {
+            font-size: 0.62rem;
+            opacity: 0.7;
+            margin-top: 2px;
+            font-weight: 600;
+        }
+        .chat-history::-webkit-scrollbar { width: 5px; }
+        .chat-history::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
         .quick-notes { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
         .btn-quick {
             background: var(--slate-light);
@@ -2439,7 +2499,7 @@
     }
 
     // ============ ACTIVE CALLS ============
-    function sendNoteToKasir(callId, presetNote) {
+    async function sendNoteToKasir(callId, presetNote) {
         let noteText;
         if (presetNote) {
             // Dari quick reply (preset)
@@ -2448,20 +2508,48 @@
             // Dari input di main window
             const inputElem = document.getElementById(`note-input-${callId}`);
             noteText = inputElem ? inputElem.value.trim() : "";
+            // Atau dari PiP/overlay input
+            if (!noteText) {
+                const pipInput = pipElements.callsList?.querySelector(`#pip-note-input-${callId}`);
+                noteText = pipInput ? pipInput.value.trim() : "";
+            }
         }
         if (!noteText) {
             showToast("⚠️ Ketik atau pilih pesan balasan dulu", 'warning');
             return;
         }
-        database.ref(`panggilan/${callId}`).update({
-            replyNote: noteText,
-            repliedAt: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
+
+        const supName = getSupervisorName() || 'Supervisor';
+        const newMsg = {
+            from: 'supervisor',
+            text: noteText,
+            sentAt: firebase.database.ServerValue.TIMESTAMP,
+            senderName: supName
+        };
+
+        const callRef = database.ref(`panggilan/${callId}`);
+
+        try {
+            // Ambil messages existing, lalu append
+            const snap = await callRef.child('messages').once('value');
+            const existing = snap.val() || [];
+            existing.push(newMsg);
+            // Update replyNote (backward compat) + messages array
+            await callRef.update({
+                replyNote: noteText,
+                repliedAt: firebase.database.ServerValue.TIMESTAMP,
+                messages: existing
+            });
             showToast("✅ Pesan terkirim ke Kasir", 'success');
-            // Update tampilan input di PiP jika ada
+            // Clear input di main window + PiP
+            const mainInput = document.getElementById(`note-input-${callId}`);
+            if (mainInput) mainInput.value = '';
             const pipInput = pipElements.callsList?.querySelector(`#pip-note-input-${callId}`);
-            if (pipInput) pipInput.value = noteText;
-        });
+            if (pipInput) pipInput.value = '';
+        } catch (err) {
+            console.error(err);
+            showToast("Gagal kirim pesan", 'error');
+        }
     }
 
     function completeCall(callId) {
@@ -2494,8 +2582,8 @@
     }
 
     function renderCalls() {
-        callsGrid.innerHTML = '';
         if (activeCallsCount === 0) {
+            callsGrid.innerHTML = '';
             emptyState.style.display = 'block';
             if (timeUpdateInterval) {
                 clearInterval(timeUpdateInterval);
@@ -2506,9 +2594,29 @@
 
         emptyState.style.display = 'none';
         const sortedKeys = Object.keys(activeCallsData).sort((a, b) => activeCallsData[b].timestamp - activeCallsData[a].timestamp);
+        
+        // Hapus card yang sudah tidak aktif
+        const existingCards = callsGrid.querySelectorAll('.call-card');
+        existingCards.forEach(card => {
+            const cardId = card.id.replace('card-', '');
+            if (!sortedKeys.includes(cardId)) {
+                card.remove();
+            }
+        });
+
         sortedKeys.forEach(key => {
             const call = activeCallsData[key];
-            callsGrid.appendChild(createCallCard(key, call));
+            const existingCard = document.getElementById(`card-${key}`);
+            if (existingCard) {
+                // Card sudah ada — hanya update chat history (jangan rebuild, supaya input tidak hilang)
+                renderChatHistory(key, call.messages || []);
+                // Update time-ago data attribute
+                const timeAgo = existingCard.querySelector(`#timeago-${key}`);
+                if (timeAgo) timeAgo.setAttribute('data-time', call.timestamp);
+            } else {
+                // Card baru — buat full card
+                callsGrid.appendChild(createCallCard(key, call));
+            }
         });
 
         if (!timeUpdateInterval) {
@@ -2524,6 +2632,7 @@
 
         const kassaType = (data.posId && data.posId.includes('kassa')) ? 'Kassa Utama' : 'Counter Area';
         const existingNote = data.replyNote || '';
+        const hasMessages = data.messages && Array.isArray(data.messages) && data.messages.length > 0;
 
         card.innerHTML = `
             <div class="call-header">
@@ -2532,6 +2641,13 @@
                     <p>${kassaType}</p>
                 </div>
                 <div class="time-ago" id="timeago-${id}" data-time="${data.timestamp}">Menghitung...</div>
+            </div>
+            <div class="chat-history ${hasMessages ? 'visible' : ''}" id="chat-history-${id}">
+                <div class="chat-history-header">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>Riwayat Chat</span>
+                </div>
+                <div class="chat-history-messages" id="chat-messages-${id}"></div>
             </div>
             <div class="note-area">
                 <div class="quick-notes">
@@ -2556,7 +2672,42 @@
                 </button>
             </div>
         `;
+        // Render chat history kalau ada
+        if (hasMessages) {
+            setTimeout(() => renderChatHistory(id, data.messages), 0);
+        }
         return card;
+    }
+
+    function renderChatHistory(callId, messages) {
+        const container = document.getElementById(`chat-messages-${callId}`);
+        const historyBox = document.getElementById(`chat-history-${callId}`);
+        if (!container) return;
+        if (!messages || messages.length === 0) {
+            if (historyBox) historyBox.classList.remove('visible');
+            container.innerHTML = '';
+            return;
+        }
+        if (historyBox) historyBox.classList.add('visible');
+        container.innerHTML = messages.map(msg => {
+            const isFromKasir = msg.from === 'kasir';
+            const time = formatChatTimeShort(msg.sentAt);
+            const sender = isFromKasir ? (msg.senderName || 'Kasir') : (msg.senderName || 'Supervisor');
+            return `<div class="chat-history-msg ${isFromKasir ? 'from-kasir' : 'from-supervisor'}">
+                <div>${escapeHtml(msg.text)}</div>
+                <div class="msg-meta">${escapeHtml(sender)} • ${time}</div>
+            </div>`;
+        }).join('');
+        // Scroll ke bawah
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function formatChatTimeShort(timestamp) {
+        if (!timestamp) return '';
+        const d = new Date(timestamp);
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        return `${hours}:${mins}`;
     }
 
     function escapeHtml(str) {
