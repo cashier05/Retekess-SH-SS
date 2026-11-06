@@ -784,6 +784,14 @@
             align-self: flex-end;
             border-bottom-right-radius: 3px;
         }
+        /* Highlight pesan baru dari kasir */
+        .chat-history-msg.new-msg {
+            animation: highlight-new 2s ease;
+        }
+        @keyframes highlight-new {
+            0% { background: #dbeafe; transform: scale(1.02); }
+            100% { background: white; transform: scale(1); }
+        }
         .chat-history-msg .msg-meta {
             font-size: 0.62rem;
             opacity: 0.7;
@@ -1050,6 +1058,118 @@
             line-height: 1.4;
         }
         .history-note .note-label { font-size: 0.68rem; color: var(--text-light); font-weight: 700; display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+        /* Chat history di history-card (riwayat panggilan) */
+        .history-chat {
+            margin-top: 8px;
+            background: var(--bg);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .history-chat-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            color: white;
+            padding: 6px 10px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .history-chat-messages {
+            max-height: 140px;
+            overflow-y: auto;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .history-chat-messages::-webkit-scrollbar { width: 4px; }
+        .history-chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .history-chat-msg {
+            max-width: 80%;
+            padding: 5px 9px;
+            border-radius: 9px;
+            font-size: 0.74rem;
+            line-height: 1.3;
+            word-wrap: break-word;
+        }
+        .history-chat-msg.from-kasir {
+            background: white;
+            color: var(--text);
+            align-self: flex-start;
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 3px;
+        }
+        .history-chat-msg.from-supervisor {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 3px;
+        }
+        .history-chat-msg .msg-meta {
+            font-size: 0.58rem;
+            opacity: 0.7;
+            margin-top: 2px;
+            font-weight: 600;
+        }
+        /* Voice note di history chat */
+        .history-chat-msg .voice-msg-content {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 120px;
+        }
+        .history-chat-msg .voice-play-btn {
+            background: rgba(255,255,255,0.25);
+            border: none;
+            color: inherit;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.62rem;
+            flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .history-chat-msg.from-kasir .voice-play-btn { background: var(--primary); color: white; }
+        .history-chat-msg .voice-waveform {
+            flex: 1;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .history-chat-msg .voice-waveform .wave-bar {
+            width: 2px;
+            background: currentColor;
+            opacity: 0.6;
+            border-radius: 1px;
+        }
+        .history-chat-msg .voice-waveform.playing .wave-bar { animation: wave-bounce 0.6s infinite ease-in-out; }
+        .history-chat-msg .voice-waveform .wave-bar:nth-child(1) { height: 30%; }
+        .history-chat-msg .voice-waveform .wave-bar:nth-child(2) { height: 60%; }
+        .history-chat-msg .voice-waveform .wave-bar:nth-child(3) { height: 90%; }
+        .history-chat-msg .voice-waveform .wave-bar:nth-child(4) { height: 50%; }
+        .history-chat-msg .voice-waveform .wave-bar:nth-child(5) { height: 70%; }
+        .history-chat-msg .voice-waveform .wave-bar:nth-child(6) { height: 40%; }
+        .history-chat-msg .voice-duration {
+            font-size: 0.58rem;
+            opacity: 0.7;
+            font-weight: 600;
+            min-width: 22px;
+        }
+        .history-chat-msg .voice-note-label {
+            font-size: 0.56rem;
+            opacity: 0.8;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            margin-bottom: 2px;
+        }
 
         .btn-delete-history {
             background: transparent;
@@ -1907,6 +2027,12 @@
                     if (!isManualOnline) {
                         return; // skip — jangan masukkan ke activeCallsData
                     }
+                    // *** Fix: Konversi messages dari object ke array kalau Firebase simpan sebagai object ***
+                    // Firebase Realtime DB bisa simpan array sebagai object kalau keys tidak sequential.
+                    // Kita konversi supaya .map() jalan di renderChatHistory.
+                    if (data.messages && !Array.isArray(data.messages) && typeof data.messages === 'object') {
+                        data.messages = Object.values(data.messages);
+                    }
                     activeCallsData[key] = data;
                     activeCallsCount++;
                     currentActiveCallIds.add(key);
@@ -1919,6 +2045,10 @@
                         triggerNewCallVibration();
                     }
                 } else if (data.status === 'completed' || data.status === 'cancelled') {
+                    // Konversi messages dari object ke array kalau perlu
+                    if (data.messages && !Array.isArray(data.messages) && typeof data.messages === 'object') {
+                        data.messages = Object.values(data.messages);
+                    }
                     historyData[key] = data;
                 }
             });
@@ -2930,18 +3060,30 @@
         const container = document.getElementById(`chat-messages-${callId}`);
         const historyBox = document.getElementById(`chat-history-${callId}`);
         if (!container) return;
-        if (!messages || messages.length === 0) {
+        // *** Fix: Konversi messages ke array kalau berupa object ***
+        if (messages && !Array.isArray(messages) && typeof messages === 'object') {
+            messages = Object.values(messages);
+        }
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
             if (historyBox) historyBox.classList.remove('visible');
             container.innerHTML = '';
             return;
         }
         if (historyBox) historyBox.classList.add('visible');
+        
+        // *** Deteksi pesan baru: bandingkan jumlah pesan dengan cache sebelumnya ***
+        const prevMsgCount = (window[`chatMsgs_${callId}`] || []).length;
+        const hasNewMessages = messages.length > prevMsgCount;
+        
         // Cache messages di global var supaya playVoiceNoteSup bisa akses via index
         window[`chatMsgs_${callId}`] = messages;
+        
         container.innerHTML = messages.map((msg, idx) => {
             const isFromKasir = msg.from === 'kasir';
             const time = formatChatTimeShort(msg.sentAt);
             const sender = isFromKasir ? (msg.senderName || 'Kasir') : (msg.senderName || 'Supervisor');
+            // Highlight pesan baru (terakhir) kalau ada pesan baru masuk
+            const isNewMsg = hasNewMessages && idx === messages.length - 1 && isFromKasir;
             let contentHtml;
             if (msg.type === 'voice' && msg.audioURL) {
                 const duration = msg.duration || 0;
@@ -2959,12 +3101,12 @@
             } else {
                 contentHtml = `<div>${escapeHtml(msg.text || '')}</div>`;
             }
-            return `<div class="chat-history-msg ${isFromKasir ? 'from-kasir' : 'from-supervisor'}">
+            return `<div class="chat-history-msg ${isFromKasir ? 'from-kasir' : 'from-supervisor'}${isNewMsg ? ' new-msg' : ''}">
                 ${contentHtml}
                 <div class="msg-meta">${escapeHtml(sender)} • ${time}</div>
             </div>`;
         }).join('');
-        // Scroll ke bawah
+        // Scroll ke bawah (selalu, supaya pesan terbaru terlihat)
         container.scrollTop = container.scrollHeight;
     }
 
@@ -3214,7 +3356,54 @@
         const kassaType = (data.posId && data.posId.includes('kassa')) ? 'Kassa Utama' : 'Counter Area';
         const timeStr = formatDateTime(eventTime);
 
-        const noteBlock = data.replyNote
+        // Konversi messages ke array kalau berupa object
+        let messages = data.messages;
+        if (messages && !Array.isArray(messages) && typeof messages === 'object') {
+            messages = Object.values(messages);
+        }
+
+        // Render chat history block kalau ada pesan
+        let chatBlock = '';
+        if (messages && Array.isArray(messages) && messages.length > 0) {
+            // Cache messages supaya playVoiceNoteHistory bisa akses via index
+            window[`historyMsgs_${id}`] = messages;
+            const msgsHtml = messages.map((msg, idx) => {
+                const isFromKasir = msg.from === 'kasir';
+                const time = formatChatTimeShort(msg.sentAt);
+                const sender = isFromKasir ? (msg.senderName || 'Kasir') : (msg.senderName || 'Supervisor');
+                let contentHtml;
+                if (msg.type === 'voice' && msg.audioURL) {
+                    const duration = msg.duration || 0;
+                    const durationStr = formatVoiceDuration(duration);
+                    contentHtml = `<div class="voice-msg-content">
+                        <button class="voice-play-btn" onclick="playVoiceNoteHistory(this, '${id}', ${idx})" title="Putar">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                        <div class="voice-waveform">
+                            ${Array.from({length: 6}, () => '<div class="wave-bar"></div>').join('')}
+                        </div>
+                        <span class="voice-duration">${durationStr}</span>
+                    </div>
+                    <div class="voice-note-label">🎤 Voice</div>`;
+                } else {
+                    contentHtml = `<div>${escapeHtml(msg.text || '')}</div>`;
+                }
+                return `<div class="history-chat-msg ${isFromKasir ? 'from-kasir' : 'from-supervisor'}">
+                    ${contentHtml}
+                    <div class="msg-meta">${escapeHtml(sender)} • ${time}</div>
+                </div>`;
+            }).join('');
+            chatBlock = `<div class="history-chat">
+                <div class="history-chat-header">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>Riwayat Chat (${messages.length})</span>
+                </div>
+                <div class="history-chat-messages" id="history-chat-msgs-${id}">${msgsHtml}</div>
+            </div>`;
+        }
+
+        // Legacy note block (kalau ada replyNote tapi tidak ada di messages array)
+        const noteBlock = data.replyNote && (!messages || !messages.some(m => m.from === 'supervisor' && m.text === data.replyNote))
             ? `<div class="history-note"><span class="note-label">💬 Balasan</span>${escapeHtml(data.replyNote)}</div>`
             : '';
 
@@ -3227,6 +3416,7 @@
                 </div>
                 <div class="history-meta">${kassaType} • ${timeStr}</div>
                 ${noteBlock}
+                ${chatBlock}
             </div>
             <button class="btn-delete-history" onclick="deleteHistoryItem('${id}')" title="Hapus riwayat ini">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -3238,6 +3428,51 @@
             </button>
         `;
         return card;
+    }
+
+    // Play voice note di history card — pakai reference dari cache messages
+    function playVoiceNoteHistory(btn, historyId, msgIdx) {
+        const msgs = window[`historyMsgs_${historyId}`];
+        if (!msgs || !msgs[msgIdx]) {
+            showToast('Voice note tidak ditemukan', 'error');
+            return;
+        }
+        const audioURL = msgs[msgIdx].audioURL;
+        const icon = btn.querySelector('i');
+        const waveform = btn.parentElement.querySelector('.voice-waveform');
+        // Stop audio lain yang sedang play
+        document.querySelectorAll('.voice-play-btn').forEach(b => {
+            if (b !== btn) {
+                b.querySelector('i').className = 'fa-solid fa-play';
+                b.parentElement.querySelector('.voice-waveform')?.classList.remove('playing');
+                if (b._audio) { b._audio.pause(); b._audio = null; }
+            }
+        });
+        if (icon.className.includes('fa-play')) {
+            const audio = new Audio(audioURL);
+            icon.className = 'fa-solid fa-pause';
+            waveform?.classList.add('playing');
+            audio.play();
+            audio.onended = () => {
+                icon.className = 'fa-solid fa-play';
+                waveform?.classList.remove('playing');
+                btn._audio = null;
+            };
+            audio.onerror = () => {
+                icon.className = 'fa-solid fa-play';
+                waveform?.classList.remove('playing');
+                showToast('Tidak bisa putar voice note', 'error');
+            };
+            btn._audio = audio;
+        } else {
+            if (btn._audio) {
+                btn._audio.pause();
+                btn._audio.currentTime = 0;
+                btn._audio = null;
+            }
+            icon.className = 'fa-solid fa-play';
+            waveform?.classList.remove('playing');
+        }
     }
 
     function formatDateTime(timestamp) {
