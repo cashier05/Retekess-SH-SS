@@ -605,6 +605,72 @@
         .section-subtitle { font-size: 0.78rem; color: var(--text-light); font-weight: 500; }
 
         /* Empty state */
+        /* ============ OFFLINE BANNER ============ */
+        .offline-banner {
+            display: none;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 18px;
+            padding: 24px 20px;
+            margin-bottom: 28px;
+            text-align: center;
+            animation: cardEntrance 0.4s ease;
+        }
+        .offline-banner.visible { display: block; }
+        .offline-banner .ob-icon {
+            width: 64px; height: 64px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            margin-bottom: 14px;
+            box-shadow: 0 8px 20px rgba(245,158,11,0.35);
+            animation: pulse-icon 2s infinite;
+        }
+        @keyframes pulse-icon {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .offline-banner h3 {
+            color: #92400e;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+        .offline-banner p {
+            color: #92400e;
+            font-size: 0.86rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+            max-width: 360px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .offline-banner .btn-go-online {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 6px 16px rgba(16,185,129,0.35);
+            transition: all 0.15s;
+        }
+        .offline-banner .btn-go-online:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(16,185,129,0.45);
+        }
+        .offline-banner .btn-go-online:active { transform: translateY(0); }
+
         .empty-state {
             text-align: center;
             padding: 56px 24px;
@@ -726,6 +792,118 @@
         }
         .chat-history::-webkit-scrollbar { width: 5px; }
         .chat-history::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* Voice note di chat history supervisor */
+        .chat-history-msg .voice-msg-content {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 140px;
+        }
+        .voice-play-btn {
+            background: rgba(255,255,255,0.25);
+            border: none;
+            color: inherit;
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .chat-history-msg.from-kasir .voice-play-btn { background: var(--primary); color: white; }
+        .chat-history-msg.from-supervisor .voice-play-btn { background: rgba(255,255,255,0.25); color: white; }
+        .voice-play-btn:hover { transform: scale(1.1); }
+        .voice-waveform {
+            flex: 1;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .voice-waveform .wave-bar {
+            width: 2px;
+            background: currentColor;
+            opacity: 0.6;
+            border-radius: 1px;
+        }
+        .voice-waveform.playing .wave-bar { animation: wave-bounce 0.6s infinite ease-in-out; }
+        .voice-waveform .wave-bar:nth-child(1) { height: 30%; animation-delay: 0s; }
+        .voice-waveform .wave-bar:nth-child(2) { height: 60%; animation-delay: 0.1s; }
+        .voice-waveform .wave-bar:nth-child(3) { height: 90%; animation-delay: 0.2s; }
+        .voice-waveform .wave-bar:nth-child(4) { height: 50%; animation-delay: 0.3s; }
+        .voice-waveform .wave-bar:nth-child(5) { height: 70%; animation-delay: 0.4s; }
+        .voice-waveform .wave-bar:nth-child(6) { height: 40%; animation-delay: 0.5s; }
+        .voice-waveform .wave-bar:nth-child(7) { height: 80%; animation-delay: 0.6s; }
+        .voice-waveform .wave-bar:nth-child(8) { height: 55%; animation-delay: 0.7s; }
+        @keyframes wave-bounce {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.5); }
+        }
+        .voice-duration {
+            font-size: 0.62rem;
+            opacity: 0.7;
+            font-weight: 600;
+            min-width: 26px;
+        }
+        .voice-note-label {
+            font-size: 0.6rem;
+            opacity: 0.8;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 3px;
+        }
+
+        /* Voice note button di input area supervisor */
+        .btn-voice-sup {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            width: 36px; height: 40px;
+            border-radius: 11px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .btn-voice-sup:hover { transform: scale(1.05); }
+        .btn-voice-sup:active { transform: scale(0.95); }
+        .btn-voice-sup.recording {
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+            animation: pulse-rec 1.2s infinite;
+        }
+        @keyframes pulse-rec {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+            50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+        }
+        .btn-voice-sup svg { width: 14px; height: 14px; }
+        .recording-indicator-sup {
+            display: none;
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 18px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .recording-indicator-sup.visible { display: flex; }
+        .recording-indicator-sup .rec-dot {
+            width: 6px; height: 6px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse-rec 1s infinite;
+        }
         .quick-notes { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
         .btn-quick {
             background: var(--slate-light);
@@ -1495,6 +1673,17 @@
             <div class="section-subtitle">Panggilan yang sedang menunggu respon</div>
         </div>
 
+        <!-- Offline banner — muncul kalau supervisor belum klik Online -->
+        <div class="offline-banner" id="offlineBanner">
+            <div class="ob-icon"><i class="fa-solid fa-power-off"></i></div>
+            <h3>Anda Sedang Offline</h3>
+            <p>Panggilan, chat, dan voice note dari kasir <strong>tidak akan masuk</strong> sampai Anda aktif Online. Klik tombol di bawah untuk mulai menerima panggilan.</p>
+            <button class="btn-go-online" onclick="toggleManualStatus()">
+                <i class="fa-solid fa-power-off"></i>
+                Aktifkan Status Online
+            </button>
+        </div>
+
         <div id="emptyState" class="empty-state">
             <div class="emoji-circle">✨</div>
             <h3>Semua Aman</h3>
@@ -1617,6 +1806,7 @@
         requestWakeLock(); // layar tetap menyala
         requestNotificationPermission(); // minta izin notifikasi browser
         registerServiceWorker(); // registrasi service worker untuk PWA
+        updateOfflineBanner(); // tampilkan banner offline kalau belum online
 
         // Tampilkan modal input nama jika belum diset
         if (!getSupervisorName()) {
@@ -1711,6 +1901,12 @@
                 const key = childSnapshot.key;
                 const data = childSnapshot.val();
                 if (data.status === 'active') {
+                    // *** Filter: kalau supervisor OFFLINE, jangan tampilkan panggilan aktif ***
+                    // Panggilan tetap ada di Firebase (kasir tetap bisa kirim), tapi
+                    // supervisor tidak akan lihat sampai klik tombol Online.
+                    if (!isManualOnline) {
+                        return; // skip — jangan masukkan ke activeCallsData
+                    }
                     activeCallsData[key] = data;
                     activeCallsCount++;
                     currentActiveCallIds.add(key);
@@ -1735,6 +1931,7 @@
             handleAlarmLifecycle();
             updatePipActiveCount();
             updateFloatingBadge();
+            updateOfflineBanner();
         });
 
         // Auto-reconnect: jika koneksi putus, coba re-init listener
@@ -2186,6 +2383,33 @@
             statusToggleBtn.querySelector('i').className = 'fa-solid fa-power-off';
         }
         updatePipStatus();
+        updateOfflineBanner();
+        // Saat status berubah (online/offline), trigger ulang listener untuk
+        // menampilkan/menyembunyikan panggilan aktif sesuai status.
+        // Listener Firebase sudah auto-update, jadi tinggal pastikan renderCalls dipanggil.
+        renderCalls();
+        updateStats();
+    }
+
+    // ============ OFFLINE BANNER ============
+    // Tampilkan banner "Anda Sedang Offline" kalau supervisor belum klik Online.
+    // Saat offline: panggilan/chat/voice note dari kasir tidak masuk (di-filter di listener).
+    function updateOfflineBanner() {
+        const banner = document.getElementById('offlineBanner');
+        const emptyState = document.getElementById('emptyState');
+        const callsGrid = document.getElementById('activeCallsGrid');
+        if (!banner) return;
+        if (!isManualOnline) {
+            // Offline — tampilkan banner, sembunyikan empty state & calls grid
+            banner.classList.add('visible');
+            if (emptyState) emptyState.style.display = 'none';
+            if (callsGrid) callsGrid.style.display = 'none';
+        } else {
+            // Online — sembunyikan banner, tampilkan calls grid
+            banner.classList.remove('visible');
+            if (callsGrid) callsGrid.style.display = 'grid';
+            // Empty state akan di-toggle oleh renderCalls() tergantung ada panggilan aktif atau tidak
+        }
     }
 
     // ============ FLOATING PIP WINDOW ============
@@ -2578,6 +2802,16 @@
     }
 
     function renderCalls() {
+        // Kalau offline, jangan tampilkan apa-apa di area panggilan aktif
+        // (banner offline sudah di-handle oleh updateOfflineBanner)
+        if (!isManualOnline) {
+            callsGrid.innerHTML = '';
+            if (timeUpdateInterval) {
+                clearInterval(timeUpdateInterval);
+                timeUpdateInterval = null;
+            }
+            return;
+        }
         if (activeCallsCount === 0) {
             callsGrid.innerHTML = '';
             emptyState.style.display = 'block';
@@ -2650,7 +2884,24 @@
                     <button class="btn-quick" onclick="setQuickNote('${id}', 'Saya segera ke sana')">🏃 Segera ke sana</button>
                     <button class="btn-quick" onclick="setQuickNote('${id}', 'Tunggu sebentar 2 menit')">⏱️ Tunggu 2 mnt</button>
                 </div>
-                <input type="text" class="note-input" id="note-input-${id}" placeholder="Ketik balasan pesan..." value="${escapeHtml(existingNote)}">
+                <div style="position: relative;">
+                    <div class="recording-indicator-sup" id="rec-indicator-${id}">
+                        <span class="rec-dot"></span>
+                        <span id="rec-time-${id}">0:00</span>
+                        <span style="opacity:0.6;">• ketuk stop</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" class="note-input" id="note-input-${id}" placeholder="Ketik balasan pesan..." value="${escapeHtml(existingNote)}" style="flex: 1;">
+                        <button class="btn-voice-sup" id="btn-voice-${id}" onclick="toggleVoiceRecordingSup('${id}')" title="Rekam voice note" aria-label="Rekam suara">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                <line x1="12" y1="19" x2="12" y2="23"/>
+                                <line x1="8" y1="23" x2="16" y2="23"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="card-actions">
                 <button class="btn-action btn-send-note" onclick="sendNoteToKasir('${id}')">
@@ -2685,17 +2936,209 @@
             return;
         }
         if (historyBox) historyBox.classList.add('visible');
-        container.innerHTML = messages.map(msg => {
+        // Cache messages di global var supaya playVoiceNoteSup bisa akses via index
+        window[`chatMsgs_${callId}`] = messages;
+        container.innerHTML = messages.map((msg, idx) => {
             const isFromKasir = msg.from === 'kasir';
             const time = formatChatTimeShort(msg.sentAt);
             const sender = isFromKasir ? (msg.senderName || 'Kasir') : (msg.senderName || 'Supervisor');
+            let contentHtml;
+            if (msg.type === 'voice' && msg.audioURL) {
+                const duration = msg.duration || 0;
+                const durationStr = formatVoiceDuration(duration);
+                contentHtml = `<div class="voice-msg-content">
+                    <button class="voice-play-btn" onclick="playVoiceNoteSup(this, '${callId}', ${idx})" title="Putar">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <div class="voice-waveform">
+                        ${Array.from({length: 8}, () => '<div class="wave-bar"></div>').join('')}
+                    </div>
+                    <span class="voice-duration">${durationStr}</span>
+                </div>
+                <div class="voice-note-label">🎤 Voice Note</div>`;
+            } else {
+                contentHtml = `<div>${escapeHtml(msg.text || '')}</div>`;
+            }
             return `<div class="chat-history-msg ${isFromKasir ? 'from-kasir' : 'from-supervisor'}">
-                <div>${escapeHtml(msg.text)}</div>
+                ${contentHtml}
                 <div class="msg-meta">${escapeHtml(sender)} • ${time}</div>
             </div>`;
         }).join('');
         // Scroll ke bawah
         container.scrollTop = container.scrollHeight;
+    }
+
+    function formatVoiceDuration(seconds) {
+        if (!seconds || seconds < 1) return '0:00';
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    // Play voice note pakai reference dari cache messages (hindari inline base64 yang besar)
+    function playVoiceNoteSup(btn, callId, msgIdx) {
+        const msgs = window[`chatMsgs_${callId}`];
+        if (!msgs || !msgs[msgIdx]) {
+            showToast('Voice note tidak ditemukan', 'error');
+            return;
+        }
+        const audioURL = msgs[msgIdx].audioURL;
+        const icon = btn.querySelector('i');
+        const waveform = btn.parentElement.querySelector('.voice-waveform');
+        // Stop audio lain yang sedang play
+        document.querySelectorAll('.voice-play-btn').forEach(b => {
+            if (b !== btn) {
+                b.querySelector('i').className = 'fa-solid fa-play';
+                b.parentElement.querySelector('.voice-waveform')?.classList.remove('playing');
+                if (b._audio) { b._audio.pause(); b._audio = null; }
+            }
+        });
+        if (icon.className.includes('fa-play')) {
+            const audio = new Audio(audioURL);
+            icon.className = 'fa-solid fa-pause';
+            waveform?.classList.add('playing');
+            audio.play();
+            audio.onended = () => {
+                icon.className = 'fa-solid fa-play';
+                waveform?.classList.remove('playing');
+                btn._audio = null;
+            };
+            audio.onerror = () => {
+                icon.className = 'fa-solid fa-play';
+                waveform?.classList.remove('playing');
+                showToast('Tidak bisa putar voice note', 'error');
+            };
+            btn._audio = audio;
+        } else {
+            if (btn._audio) {
+                btn._audio.pause();
+                btn._audio.currentTime = 0;
+                btn._audio = null;
+            }
+            icon.className = 'fa-solid fa-play';
+            waveform?.classList.remove('playing');
+        }
+    }
+
+    // ============ VOICE RECORDING (Supervisor) ============
+    let mediaRecorderSup = null;
+    let audioChunksSup = [];
+    let recordingTimerSup = null;
+    let recordingStartSup = 0;
+    let isRecordingSup = false;
+    let currentRecordingCallId = null;
+
+    async function toggleVoiceRecordingSup(callId) {
+        if (isRecordingSup && currentRecordingCallId === callId) {
+            stopVoiceRecordingSup();
+        } else {
+            await startVoiceRecordingSup(callId);
+        }
+    }
+
+    async function startVoiceRecordingSup(callId) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast('Browser tidak mendukung rekaman suara', 'error');
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+            let mimeType = '';
+            for (const mt of mimeTypes) {
+                if (MediaRecorder.isTypeSupported(mt)) { mimeType = mt; break; }
+            }
+            mediaRecorderSup = new MediaRecorder(stream, mimeType ? { mimeType, audioBitsPerSecond: 32000 } : undefined);
+            audioChunksSup = [];
+            mediaRecorderSup.ondataavailable = (event) => {
+                if (event.data.size > 0) audioChunksSup.push(event.data);
+            };
+            mediaRecorderSup.onstop = () => {
+                const blob = new Blob(audioChunksSup, { type: mimeType || 'audio/webm' });
+                stream.getTracks().forEach(track => track.stop());
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64Audio = reader.result;
+                    const duration = Math.round((Date.now() - recordingStartSup) / 1000);
+                    sendVoiceMessageSup(callId, base64Audio, duration, mimeType || 'audio/webm');
+                };
+                reader.readAsDataURL(blob);
+            };
+            mediaRecorderSup.start();
+            isRecordingSup = true;
+            currentRecordingCallId = callId;
+            recordingStartSup = Date.now();
+            const btn = document.getElementById(`btn-voice-${callId}`);
+            const indicator = document.getElementById(`rec-indicator-${callId}`);
+            if (btn) {
+                btn.classList.add('recording');
+                btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+            }
+            if (indicator) indicator.classList.add('visible');
+            recordingTimerSup = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - recordingStartSup) / 1000);
+                const timeEl = document.getElementById(`rec-time-${callId}`);
+                if (timeEl) timeEl.innerText = formatVoiceDuration(elapsed);
+                if (elapsed >= 60) stopVoiceRecordingSup();
+            }, 200);
+        } catch (err) {
+            console.error('Mic error:', err);
+            if (err.name === 'NotAllowedError') {
+                showToast('Izin mikrofon ditolak. Aktifkan di pengaturan browser', 'error');
+            } else {
+                showToast('Tidak bisa akses mikrofon: ' + err.message, 'error');
+            }
+        }
+    }
+
+    function stopVoiceRecordingSup() {
+        if (!mediaRecorderSup || !isRecordingSup) return;
+        isRecordingSup = false;
+        clearInterval(recordingTimerSup);
+        recordingTimerSup = null;
+        const callId = currentRecordingCallId;
+        try { mediaRecorderSup.stop(); } catch (e) {}
+        const btn = callId ? document.getElementById(`btn-voice-${callId}`) : null;
+        const indicator = callId ? document.getElementById(`rec-indicator-${callId}`) : null;
+        if (btn) {
+            btn.classList.remove('recording');
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>`;
+        }
+        if (indicator) indicator.classList.remove('visible');
+        currentRecordingCallId = null;
+    }
+
+    async function sendVoiceMessageSup(callId, audioDataURL, duration, mimeType) {
+        if (audioDataURL.length > 700000) {
+            showToast('Voice note terlalu panjang (maks 60 detik)', 'error');
+            return;
+        }
+        const supName = getSupervisorName() || 'Supervisor';
+        const newMsg = {
+            from: 'supervisor',
+            type: 'voice',
+            audioURL: audioDataURL,
+            audioMime: mimeType,
+            duration: duration,
+            sentAt: firebase.database.ServerValue.TIMESTAMP,
+            senderName: supName
+        };
+        const callRef = database.ref(`panggilan/${callId}`);
+        try {
+            const snap = await callRef.child('messages').once('value');
+            const existing = snap.val() || [];
+            existing.push(newMsg);
+            await callRef.update({ messages: existing });
+            showToast('🎤 Voice note terkirim', 'success');
+        } catch (err) {
+            console.error(err);
+            showToast('Gagal kirim voice note', 'error');
+        }
     }
 
     function formatChatTimeShort(timestamp) {
