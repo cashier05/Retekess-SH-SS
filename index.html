@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alarm - Supervisor</title>
+    <title>Sistem Panggil Alarm - Supervisor</title>
 
     <meta name="theme-color" content="#4f46e5">
     <link rel="icon" type="image/png" href="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png">
@@ -1633,6 +1633,8 @@
                     if (!previousActiveCallIds.has(key) && data.posName) {
                         // Tampilkan notifikasi browser (untuk kasus tab di-minimize)
                         showCallNotification(data.posName, key);
+                        // Getar kuat saat panggilan baru masuk (HP Android)
+                        triggerNewCallVibration();
                     }
                 } else if (data.status === 'completed' || data.status === 'cancelled') {
                     historyData[key] = data;
@@ -1733,6 +1735,49 @@
             };
         } catch (e) {
             console.log('Notifikasi gagal:', e.message);
+        }
+    }
+
+    // ============ VIBRATION (Getar saat panggilan masuk) ============
+    let vibrateInterval = null;
+
+    function startVibration() {
+        // Hanya jika device mendukung vibration (HP Android, sebagian tablet)
+        if (!('vibrate' in navigator)) return;
+        try {
+            // Pattern: getar 400ms, diam 200ms, getar 400ms, diam 200ms, getar 800ms, diam 1000ms (loop)
+            navigator.vibrate([400, 200, 400, 200, 800, 1000]);
+            // Loop setiap 3 detik
+            if (vibrateInterval) clearInterval(vibrateInterval);
+            vibrateInterval = setInterval(() => {
+                navigator.vibrate([400, 200, 400, 200, 800, 1000]);
+            }, 3000);
+        } catch (e) {
+            console.log('Vibration gagal:', e.message);
+        }
+    }
+
+    function stopVibration() {
+        if (!('vibrate' in navigator)) return;
+        try {
+            navigator.vibrate(0); // stop vibration
+            if (vibrateInterval) {
+                clearInterval(vibrateInterval);
+                vibrateInterval = null;
+            }
+        } catch (e) {
+            console.log('Stop vibration gagal:', e.message);
+        }
+    }
+
+    function triggerNewCallVibration() {
+        // Getar super kuat & panjang saat panggilan BARU masuk
+        if (!('vibrate' in navigator)) return;
+        try {
+            // Pattern S-O-S style: getar panjang, diam, getar panjang, diam, getar panjang banget
+            navigator.vibrate([800, 150, 800, 150, 1500]);
+        } catch (e) {
+            console.log('New call vibration gagal:', e.message);
         }
     }
 
@@ -2623,11 +2668,17 @@
     function handleAlarmLifecycle() {
         if (activeCallsCount > 0) {
             body.classList.add('alarm-active');
-            if (!isMuted) playAlarmAudio();
-            else alarmAudio.pause();
+            if (!isMuted) {
+                playAlarmAudio();
+                startVibration(); // Getar HP saat ada panggilan aktif
+            } else {
+                alarmAudio.pause();
+                stopVibration();
+            }
         } else {
             body.classList.remove('alarm-active');
             stopAlarmAudio();
+            stopVibration(); // Stop getar juga
             // Auto-reset mute ketika tidak ada panggilan aktif
             if (isMuted) {
                 isMuted = false;
@@ -2662,6 +2713,7 @@
     function stopAlarmAudio() {
         alarmAudio.pause();
         alarmAudio.currentTime = 0;
+        stopVibration();
     }
 
     function toggleMute() {
@@ -2670,13 +2722,15 @@
             isMuted = false;
             if (activeCallsCount > 0) {
                 playAlarmAudio();
+                startVibration();
             }
             showToast('🔊 Suara alarm diaktifkan', 'success');
         } else {
             // Matikan suara
             isMuted = true;
             alarmAudio.pause();
-            showToast('🔇 Suara alarm dimatikan sementara', 'info');
+            stopVibration();
+            showToast('🔇 Suara alarm & getar dimatikan sementara', 'info');
         }
         updatePipMuteUI();
     }
