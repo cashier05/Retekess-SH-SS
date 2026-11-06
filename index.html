@@ -6,9 +6,14 @@
     <title>Sistem Panggil Alarm - Supervisor</title>
 
     <meta name="theme-color" content="#4f46e5">
-    <link rel="icon" type="image/png" href="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png">
-    <link rel="apple-touch-icon" href="https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png">
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Panggil Alarm Supervisor","short_name":"SupervisorAlarm","start_url":".","display":"standalone","background_color":"%23f8fafc","theme_color":"%234f46e5","icons":[{"src":"https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/hdwM43h8V6EeWHTA8Mxu/pub/0HnGoVRUn0BnbIqXvDVp.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-72.png">
+    <link rel="manifest" href="./manifest-supervisor.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Supervisor">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1555,6 +1560,7 @@
         checkPipSupport();
         requestWakeLock(); // layar tetap menyala
         requestNotificationPermission(); // minta izin notifikasi browser
+        registerServiceWorker(); // registrasi service worker untuk PWA
 
         // Tampilkan modal input nama jika belum diset
         if (!getSupervisorName()) {
@@ -1563,8 +1569,14 @@
 
         // Re-acquire wake lock when page becomes visible again
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && wakeLock === null) {
-                requestWakeLock();
+            if (document.visibilityState === 'visible') {
+                if (wakeLock === null) requestWakeLock();
+                // Kalau kembali ke app & ada panggilan aktif & tidak di-mute, langsung getar + bunyi
+                if (activeCallsCount > 0 && !isMuted) {
+                    playAlarmAudio();
+                    startVibration();
+                    console.log('📳 Kembali ke app, langsung getar (ada panggilan aktif)');
+                }
             }
         });
 
@@ -1574,6 +1586,24 @@
             alarmAudio.currentTime = 0;
         }).catch(() => console.log("Audio menunggu interaksi pengguna"));
     };
+
+    // ============ SERVICE WORKER REGISTRATION ============
+    function registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js', { scope: './' })
+                .then((registration) => {
+                    console.log('✅ Service Worker terdaftar:', registration.scope);
+                    // Listen untuk update SW
+                    registration.addEventListener('update', () => {
+                        console.log('🔄 Service Worker update tersedia');
+                        // Bisa tambah UI "Update tersedia" kalau perlu
+                    });
+                })
+                .catch((err) => {
+                    console.log('❌ SW gagal daftar:', err.message);
+                });
+        }
+    }
 
     function updateHeaderDate() {
         const now = new Date();
@@ -1743,15 +1773,20 @@
 
     function startVibration() {
         // Hanya jika device mendukung vibration (HP Android, sebagian tablet)
-        if (!('vibrate' in navigator)) return;
+        if (!('vibrate' in navigator)) {
+            console.log('⚠️ Device tidak support vibration (mungkin iOS atau desktop)');
+            return;
+        }
+        // Stop dulu vibration yang lagi jalan
+        stopVibration();
         try {
-            // Pattern: getar 400ms, diam 200ms, getar 400ms, diam 200ms, getar 800ms, diam 1000ms (loop)
-            navigator.vibrate([400, 200, 400, 200, 800, 1000]);
-            // Loop setiap 3 detik
-            if (vibrateInterval) clearInterval(vibrateInterval);
+            // LANGSUNG getar panjang (1000ms = 1 detik getar keras)
+            navigator.vibrate(1000);
+            // Loop setiap 1.2 detik (getar 1s, jeda 0.2s, getar lagi)
             vibrateInterval = setInterval(() => {
-                navigator.vibrate([400, 200, 400, 200, 800, 1000]);
-            }, 3000);
+                navigator.vibrate(1000);
+            }, 1200);
+            console.log('📳 Vibration aktif - getar tiap 1.2 detik');
         } catch (e) {
             console.log('Vibration gagal:', e.message);
         }
@@ -1761,10 +1796,12 @@
         if (!('vibrate' in navigator)) return;
         try {
             navigator.vibrate(0); // stop vibration
+            navigator.vibrate([]); // clear pattern
             if (vibrateInterval) {
                 clearInterval(vibrateInterval);
                 vibrateInterval = null;
             }
+            console.log('📴 Vibration dihentikan');
         } catch (e) {
             console.log('Stop vibration gagal:', e.message);
         }
@@ -1772,10 +1809,14 @@
 
     function triggerNewCallVibration() {
         // Getar super kuat & panjang saat panggilan BARU masuk
-        if (!('vibrate' in navigator)) return;
+        if (!('vibrate' in navigator)) {
+            console.log('⚠️ Device tidak support vibration');
+            return;
+        }
         try {
-            // Pattern S-O-S style: getar panjang, diam, getar panjang, diam, getar panjang banget
-            navigator.vibrate([800, 150, 800, 150, 1500]);
+            // LANGSUNG getar 2 detik tanpa jeda (getar keras & panjang)
+            navigator.vibrate(2000);
+            console.log('📳 Panggilan baru! Getar 2 detik');
         } catch (e) {
             console.log('New call vibration gagal:', e.message);
         }
@@ -1787,6 +1828,7 @@
             if (!confirm('Anda akan menjadi OFFLINE. Kasir tidak akan bisa memanggil Anda. Lanjutkan?')) return;
             myStatusRef.remove().then(() => {
                 showToast('🔴 Anda sekarang OFFLINE', 'warning');
+                stopVibration();
             });
         } else {
             // Pastikan nama sudah diset
@@ -1794,6 +1836,11 @@
                 showNameModal();
                 showToast('Silakan masukkan nama dulu', 'info');
                 return;
+            }
+            // Unlock vibration LANGSUNG di user gesture (sebelum async), supaya bisa dipakai nanti
+            if ('vibrate' in navigator) {
+                navigator.vibrate(100); // test getar 100ms untuk konfirmasi
+                console.log('📳 Vibration di-unlock via tombol Online');
             }
             // Set Online (dengan foto kalau ada)
             const statusData = {
@@ -2695,14 +2742,19 @@
                 unlocker.id = 'audioUnlocker';
                 unlocker.innerHTML = `
                     <div class="unlock-box">
-                        <div class="unlock-icon">🔊</div>
-                        <h2>Aktifkan Suara Alarm</h2>
-                        <p>Klik di mana saja untuk mengaktifkan notifikasi suara alarm supervisor.</p>
+                        <div class="unlock-icon">🔊📳</div>
+                        <h2>Aktifkan Suara & Getar</h2>
+                        <p>Klik di mana saja untuk mengaktifkan suara alarm dan getaran HP saat ada panggilan masuk.</p>
                     </div>
                 `;
                 unlocker.onclick = function() {
                     isMuted = false;
+                    // Unlock vibration dengan gesture user
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate(200); // test getar 200ms
+                    }
                     playAlarmAudio();
+                    startVibration(); // langsung mulai getar kalau ada panggilan aktif
                     this.remove();
                 };
                 document.body.appendChild(unlocker);
