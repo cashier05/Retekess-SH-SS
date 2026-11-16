@@ -719,6 +719,100 @@
         .call-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; gap: 12px; }
         .pos-info h2 { font-size: 1.4rem; font-weight: 800; color: var(--text); letter-spacing: -0.01em; }
         .pos-info p { font-size: 0.7rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-top: 3px; letter-spacing: 0.5px; }
+        /* Nama kasir di bawah kassaType (call card) */
+        .pos-info .kasir-name-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            padding: 4px 10px 4px 4px;
+            background: var(--primary-light);
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--primary);
+            max-width: 100%;
+        }
+        .pos-info .kasir-name-display img {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1.5px solid white;
+            flex-shrink: 0;
+        }
+        .pos-info .kasir-name-display .kasir-icon {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem;
+            flex-shrink: 0;
+        }
+        .pos-info .kasir-name-display span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* Nama kasir di PiP call item (dark background) */
+        .pip-call-kasir {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            font-weight: 600;
+            margin-top: -2px;
+            margin-bottom: 6px;
+            padding-left: 15px;
+        }
+        .pip-call-kasir img {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.25);
+            flex-shrink: 0;
+        }
+        .pip-call-kasir .kasir-icon-dark {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.55rem;
+            flex-shrink: 0;
+        }
+        .pip-call-kasir span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* Nama kasir di history card */
+        .history-kasir-name {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 5px;
+            font-size: 0.74rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .history-kasir-name img {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .history-kasir-name .kasir-icon {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.6rem;
+            flex-shrink: 0;
+        }
 
         .time-ago {
             font-size: 0.75rem;
@@ -2328,9 +2422,11 @@
         document.querySelectorAll('.photo-preset').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         selectedPresetEmoji = emoji;
-        // Render preset sebagai base64 SVG dengan emoji
+        // Render preset sebagai SVG data URL dengan emoji.
+        // Pakai URL-encoding (encodeURIComponent) supaya support karakter emoji
+        // (btoa() gagal untuk karakter multi-byte di luar Latin1).
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><text x="64" y="64" font-size="80" text-anchor="middle" dominant-baseline="central">${emoji}</text></svg>`;
-        const dataUrl = 'data:image/svg+xml;base64,' + btoa(svg);
+        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
         localStorage.setItem('supervisorPhoto', dataUrl);
         updatePhotoPreview(dataUrl);
     }
@@ -2801,6 +2897,10 @@
                     </div>
                     <span class="pip-call-time">${timeAgo}</span>
                 </div>
+                ${call.kasirName ? `<div class="pip-call-kasir">
+                    ${call.kasirPhoto ? `<img src="${escapeHtml(call.kasirPhoto)}" alt="" referrerpolicy="no-referrer">` : `<div class="kasir-icon-dark"><i class="fa-solid fa-user"></i></div>`}
+                    <span>${escapeHtml(call.kasirName)}</span>
+                </div>` : ''}
                 <div class="pip-quick-replies">
                     <button class="pip-quick-btn" data-action="quick-reply" data-call-id="${key}" data-note="Saya segera ke sana">🏃 Segera</button>
                     <button class="pip-quick-btn" data-action="quick-reply" data-call-id="${key}" data-note="Tunggu sebentar 2 menit">⏱️ 2 mnt</button>
@@ -2999,6 +3099,10 @@
                 <div class="pos-info">
                     <h2>${data.posName}</h2>
                     <p>${kassaType}</p>
+                    ${data.kasirName ? `<div class="kasir-name-display">
+                        ${data.kasirPhoto ? `<img src="${escapeHtml(data.kasirPhoto)}" alt="" referrerpolicy="no-referrer">` : `<div class="kasir-icon"><i class="fa-solid fa-user"></i></div>`}
+                        <span>${escapeHtml(data.kasirName)}</span>
+                    </div>` : ''}
                 </div>
                 <div class="time-ago" id="timeago-${id}" data-time="${data.timestamp}">Menghitung...</div>
             </div>
@@ -3415,6 +3519,10 @@
                     <span class="history-status-badge">${statusText}</span>
                 </div>
                 <div class="history-meta">${kassaType} • ${timeStr}</div>
+                ${data.kasirName ? `<div class="history-kasir-name">
+                    ${data.kasirPhoto ? `<img src="${escapeHtml(data.kasirPhoto)}" alt="" referrerpolicy="no-referrer">` : `<div class="kasir-icon"><i class="fa-solid fa-user"></i></div>`}
+                    <span>${escapeHtml(data.kasirName)}</span>
+                </div>` : ''}
                 ${noteBlock}
                 ${chatBlock}
             </div>
